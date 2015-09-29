@@ -1,0 +1,3 @@
+Hi. I'm John.
+
+This project is based in part on chapter 15 of Marijn Haverbeke's Eloquent Javascript. I've adopted his general approach to manipulating the DOM and tried to adopt it to fit my concept which is a simple projectile game I've called DOMTASTIC. The goal is to achieve, through customization, an understanding of the underlying techniques used in the chapter. This includes encapsulation, use of higher-order functions and basic asynchronous programming. 

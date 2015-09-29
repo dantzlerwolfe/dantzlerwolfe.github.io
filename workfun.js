@@ -88,14 +88,6 @@ Launcher.prototype.fire = function() {
 	newRound.velocity = velocity;
 	level.activeGrid.push(newRound);
 	this.ammo--;
-
-		/*
-		this.projectiles.push(new Projectile(this.pos));
-		var hotRound = this.projectiles[this.projectiles.length - 1];
-		var mass = hotRound.mass;
-		hotRound.velocity = impulse(this.launchAngle, this.initialForce, 
-			this.timeApplied, mass);
-		*/
 	};	
 
 Launcher.prototype.type = "launcher";
@@ -111,8 +103,7 @@ function Projectile(pos) {
 
 // Position under constant acceleration. Thanks, Isaac.
 // t0 = time when projectile is fired.
-Projectile.prototype.tracker = function () {
-	var deltaT = (new Date().getTime() - this.t0) * 0.001;
+Projectile.prototype.move = function (deltaT) {
 	var newX = this.initialPos.x + this.velocity.x * deltaT;
 	var newY = this.initialPos.y - this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
@@ -120,6 +111,10 @@ Projectile.prototype.tracker = function () {
 };
 
 Projectile.prototype.type = "projectile";
+
+Projectile.prototype.act = function(deltaT, level) {
+	var
+}
 
 function Target (pos, size) {
 	this.pos = pos;
@@ -169,15 +164,7 @@ function WorldBuilder (plan) {
 	this.status = this.finishDelay = null;
 }
 
-// DOM Element Helper
-function elMaker(name, className) {
-	var el = document.createElement(name);
-	if (className) el.className = className;
-	return el;
-}
-
 // Move Actors
-
 WorldBuilder.prototype.animate = function(step, keys) {
 	if (this.status != null)
 		this.finishDelay -= step;
@@ -186,8 +173,16 @@ WorldBuilder.prototype.animate = function(step, keys) {
 		var thisStep = Math.min(step, maxStep);
 		this.activeGrid.forEach(function(actor) {
 			actor.act(thisStep, this, keys)
-		})
+		}, this);
+		step -= thisStep
 	}
+};
+
+// DOM Element Helper
+function elMaker(name, className) {
+	var el = document.createElement(name);
+	if (className) el.className = className;
+	return el;
 }
 
 // DOM Display
