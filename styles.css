@@ -1,0 +1,29 @@
+
+.background    { background: rgb(52, 166, 251);
+                 table-layout: fixed;
+                 border-spacing: 0;              }
+.background td { padding: 0;                     }
+
+.game {
+  overflow: hidden;
+  max-width: 600px;
+  max-height: 450px;
+  position: relative;
+}
+.HardWall { background: red; }
+.SoftWall { background: yellow; }
+
+.projectile		 { background: rgb(255, 100, 100); }
+.launcher { 
+	position: relative;
+	background: black;              
+	}
+
+.active { 
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 100; 
+}
+
+.Target				 { background: white;							 }
