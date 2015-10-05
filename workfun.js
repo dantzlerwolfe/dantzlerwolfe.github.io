@@ -92,11 +92,10 @@ Launcher.prototype.fire = function() {
 
 Launcher.prototype.type = "launcher";
 
-// If the Projectile method is called from the Launcher, won't "this"
-// refer to the Launcher? If so, need some sort of binding.
 function Projectile(pos) {
 	this.mass = 9.81; // in kilograms																
 	this.pos = pos
+	this.size = new Vector(0.5,0.5);
 	this.t0 = new Date().getTime();
 	this.velocity = new Vector(0,0);
 }
@@ -127,12 +126,9 @@ function HardWall() {}
 function SoftWall() {}
 */
 
-/**************/
-/* Draw Level */
-/**************/
-
-/* DOM Manipulation adapted from
-	 Haverbeke, Eloquent Javascript. */
+/*************************************/
+/* Initialize and Monitor Game State */
+/*************************************/
 
 var scale = 20;
 
@@ -147,22 +143,56 @@ function WorldBuilder (plan) {
 		var levelSlice = plan[y], staticSlice = [];
 		for (var x = 0; x < this.width; x++) {
 			var ch = levelSlice[x];
-			var tokenA = activeTokens[ch], tokenS = staticTokens[ch];
-			if (tokenA) {
-
-// This looks broken. For instance if tokenA is the Launcher, 
-// the input parameters are incorrect.
-
-				this.activeGrid.push(new tokenA(new Vector(x,y), ch));
-				staticSlice.push(null);
-			}
-			else if (tokenS) staticSlice.push(tokenS);
-			else staticSlice.push(null);
+			var type = null;
+			var aToken = activeTokens[ch], sToken = staticTokens[ch];
+			if (aToken)
+				this.activeGrid.push(new aToken(new Vector(x,y), ch));
+			else if (sToken) 
+				type = sToken;
+			staticSlice.push(type);
 		}
 		this.staticGrid.push(staticSlice);
 	}
 	this.status = this.finishDelay = null;
 }
+
+// Identify obstacles that cause an interaction prior to impact.
+WorldBuilder.prototype.obstacleAt = function (actor) {
+	var xStart = Math.floor(actor.pos.x);
+	var xEnd = Math.ceil(actor.pos.x + actor.size.x);
+	var yStart = Math.floor(actor.pos.y);
+	var yEnd = Math.ceil(actor.pos.y + actor.size.y);
+
+// Check for static obstacles.
+	for (var y = yStart; y < yEnd; y++) {
+		for (var x = xStart; x < xEnd; x++) {
+			var sObstacle = this.staticGrid[y][x]
+			if (sObstacle) return sObstacle;
+
+// Check for active obstacles.
+	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
+		var aObstacle = this.activeGrid[i];
+		if (aObstacle != actor && !aObstacle.crushable &&
+				xEnd > aObstacle.pos.x &&
+				xStart < aObstacle.pos.x + aObstacle.size.x &&
+				yEnd > aObstacle.pos.y &&
+				yStart < aObstacle.pos.y + aObstacle.size.y)
+			return aObstacle;
+	}
+};
+
+// Identify obstacles that cause an interaction after impact (i.e. crushables).
+WorldBuilder.prototype.crushableAt = function (actor) {
+	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
+		var aObstacle = this.activeGrid[i];
+		if (aObstacle != actor && aObstacle.crushable &&
+				xEnd > aObstacle.pos.x &&
+				xStart < aObstacle.pos.x + aObstacle.size.x &&
+				yEnd > aObstacle.pos.y &&
+				yStart < aObstacle.pos.y + aObstacle.size.y)
+			return aObstacle;
+	}
+};
 
 // Move Actors
 WorldBuilder.prototype.animate = function(step, keys) {
@@ -177,6 +207,12 @@ WorldBuilder.prototype.animate = function(step, keys) {
 		step -= thisStep
 	}
 };
+
+
+
+/******************/
+/* Draw the Level */
+/******************/
 
 // DOM Element Helper
 function elMaker(name, className) {
