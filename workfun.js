@@ -106,14 +106,22 @@ Projectile.prototype.move = function (deltaT) {
 	var newX = this.initialPos.x + this.velocity.x * deltaT;
 	var newY = this.initialPos.y - this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
-	this.pos = new Vector(newX, newY);
+	var newPos = new Vector(newX, newY);
+	return newPos;
 };
 
 Projectile.prototype.type = "projectile";
 
 Projectile.prototype.act = function(deltaT, level) {
-	var
-}
+	var newPos = this.move(deltaT);
+	var obstacle = level.obstacleAt(this);
+	if (obstacle)
+		level.interactWith(obstacle);
+	this.pos = newPos;
+	var crushable = level.crushableAt(this.pos);
+	if (crushable) 
+		level.interactWith(crushable);
+};
 
 function Target (pos, size) {
 	this.pos = pos;
@@ -158,25 +166,26 @@ function WorldBuilder (plan) {
 
 // Identify obstacles that cause an interaction prior to impact.
 WorldBuilder.prototype.obstacleAt = function (actor) {
-	var xStart = Math.floor(actor.pos.x);
-	var xEnd = Math.ceil(actor.pos.x + actor.size.x);
-	var yStart = Math.floor(actor.pos.y);
-	var yEnd = Math.ceil(actor.pos.y + actor.size.y);
+	var xStart = Math.floor(actor.newPos.x);
+	var xEnd = Math.ceil(actor.newPos.x + actor.size.x);
+	var yStart = Math.floor(actor.newPos.y);
+	var yEnd = Math.ceil(actor.newPos.y + actor.size.y);
 
 // Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
 			var sObstacle = this.staticGrid[y][x]
-			if (sObstacle) return sObstacle;
+			if (sObstacle) 
+				return sObstacle;
 
 // Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
 		var aObstacle = this.activeGrid[i];
 		if (aObstacle != actor && !aObstacle.crushable &&
-				xEnd > aObstacle.pos.x &&
-				xStart < aObstacle.pos.x + aObstacle.size.x &&
-				yEnd > aObstacle.pos.y &&
-				yStart < aObstacle.pos.y + aObstacle.size.y)
+				xEnd > aObstacle.newPos.x &&
+				xStart < aObstacle.newPos.x + aObstacle.size.x &&
+				yEnd > aObstacle.newPos.y &&
+				yStart < aObstacle.newPos.y + aObstacle.size.y)
 			return aObstacle;
 	}
 };
@@ -207,6 +216,10 @@ WorldBuilder.prototype.animate = function(step, keys) {
 		step -= thisStep
 	}
 };
+
+WorldBuilder.prototype.interactWith = function(obj) {
+
+}
 
 
 
