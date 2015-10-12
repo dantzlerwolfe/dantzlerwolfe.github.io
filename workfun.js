@@ -39,12 +39,12 @@ var progress = 1,
 
 var activeTokens = {
 				"L": Launcher,
-				"P": Projectile
+				"P": Projectile,
+				"T": Target,
+				// "s": SoftWall
 		},
 		staticTokens = {
-				"T": "Target",
-				"x": "HardWall",
-				"s": "SoftWall" 
+				"x": "HardWall", 
 		};
 
 // Used to locate only activeTokens 
@@ -103,8 +103,8 @@ function Projectile(pos) {
 // Position under constant acceleration. Thanks, Isaac.
 // t0 = time when projectile is fired.
 Projectile.prototype.move = function (deltaT) {
-	var newX = this.initialPos.x + this.velocity.x * deltaT;
-	var newY = this.initialPos.y - this.velocity.y * deltaT + 
+	var newX = this.pos.x + this.velocity.x * deltaT;
+	var newY = this.pos.y + this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
 	var newPos = new Vector(newX, newY);
 	return newPos;
@@ -116,17 +116,24 @@ Projectile.prototype.act = function(deltaT, level) {
 	var newPos = this.move(deltaT);
 	var obstacle = level.obstacleAt(this);
 	if (obstacle)
-		level.interactWith(obstacle);
+		level.interactWith(this, obstacle);
 	this.pos = newPos;
 	var crushable = level.crushableAt(this.pos);
 	if (crushable) 
-		level.interactWith(crushable);
+		level.interactWith(this, crushable);
+	console.log()
 };
 
-function Target (pos, size) {
+function Target (pos) {
 	this.pos = pos;
-	this.size = size;
+	this.power = 4;
+	this.size = new Vector(0.5, 0.5);
+	this.interact = function (obj) {
+		delete obj;
+		this.power -= 2
+	};
 }
+
 Target.prototype.type = "target";
 
 /*
@@ -176,7 +183,9 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 		for (var x = xStart; x < xEnd; x++) {
 			var sObstacle = this.staticGrid[y][x]
 			if (sObstacle) 
-				return sObstacle;
+				return sObstacle; // returns null or string
+		}
+	}
 
 // Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
@@ -186,7 +195,7 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 				xStart < aObstacle.newPos.x + aObstacle.size.x &&
 				yEnd > aObstacle.newPos.y &&
 				yStart < aObstacle.newPos.y + aObstacle.size.y)
-			return aObstacle;
+			return aObstacle; 
 	}
 };
 
@@ -217,11 +226,11 @@ WorldBuilder.prototype.animate = function(step, keys) {
 	}
 };
 
-WorldBuilder.prototype.interactWith = function(obj) {
-
-}
-
-
+WorldBuilder.prototype.interactWith = function(obj1, obj2) {
+	if (obj2 == "HardWall") {
+		obj1.velocity = obj1.velocity.scale(-1);
+	} else obj2.interact(obj1);
+};
 
 /******************/
 /* Draw the Level */
@@ -307,7 +316,7 @@ Vector.prototype.scale = function(scalar) {
 // Calculate Launch Velocity Using Simple Impulse Equations
 // launchAngle in radians, launchForce in newtons, timeApplied
 // in seconds, projMass in kg
-function impulse (launchAngle, launchForce, timeApplied, projMass) {
+function impulse(launchAngle, launchForce, timeApplied, projMass) {
 	var xVelocity = launchForce * Math.cos(launchAngle) * 							
 										timeApplied / projMass;         									
 	var yVelocity = (launchForce * Math.sin(launchAngle) - G) *  		
@@ -316,6 +325,52 @@ function impulse (launchAngle, launchForce, timeApplied, projMass) {
 	return velocity;
 }
 
+
+/****************/
+/* Run the Game */
+/****************/
+
+function runGame(plans, Display) {
+	function startLevel() {
+		runLevel(new WorldBuilder(plans), Display, function(status) {
+			if (status == "lost")
+				startLevel();
+			else
+				console.log("You win?");
+		});
+	}
+	startLevel();
+}
+
+function runLevel(level, Display, andThen) {
+	var display = new Display(document.body, level);
+	runAnimation(function(step) {
+		level.animate(step, arrows);
+		display.drawFrame(step);
+		if (level.isFinished()) {
+			display.clear();
+			if (andThen)
+				andThen(level.status);
+			return false;
+		}
+	});
+}
+
+function runAnimation(frameFunc) {
+	var lastTime = null;
+	function frame(time) {
+		var stop = false;
+		if (lastTime != null) {
+			var timeStep = Math.min(time - lastTime, 100) / 1000;
+			stop = frameFunc(timeStep) === false;
+		}
+		lastTime = time;
+		if (!stop) {
+			requestAnimationFrame(frame);
+		}
+	}
+	requestAnimationFrame(frame);
+}
 
 
 
@@ -341,18 +396,3 @@ function trackerUpdate () {
 }
 var trackerInterval = window.setInterval(trackerUpdate, 10);
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
