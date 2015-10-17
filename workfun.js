@@ -75,8 +75,8 @@ function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
 	this.launchAngle = Math.PI/4; 																			
-	this.forceMultiple = 5; 																
-	this.timeApplied = 250;  																		
+	this.forceMultiple = 22.59; 																
+	this.timeApplied = 2;  																		
 	this.ammo = 5;
 	this.initialForce = this.forceMultiple * G;											
 }
@@ -88,9 +88,15 @@ Launcher.prototype.fire = function() {
 	newRound.velocity = velocity;
 	level.activeGrid.push(newRound);
 	this.ammo--;
-	};	
+};	
 
 Launcher.prototype.type = "launcher";
+Launcher.prototype.act = function() {
+	// Placeholder
+}
+Launcher.prototype.interact = function(obj) {
+	obj.velocity = obj.velocity.scale(-1);
+}
 
 function Projectile(pos) {
 	this.mass = 9.81; // in kilograms																
@@ -113,11 +119,27 @@ Projectile.prototype.move = function (deltaT) {
 Projectile.prototype.type = "projectile";
 
 Projectile.prototype.act = function(deltaT, level) {
-	var newPos = this.move(deltaT);
+	this.newPos = this.move(deltaT);
+
+	// temporary bouncer
+	if (this.newPos.x >= boundaryLength || this.newPos.x <= 0 ) 
+		this.velocity.x = -1 * this.velocity.x;
+	if (this.newPos.y <= 0 || this.newPos.y >= 9)
+		this.velocity.y = -1 * this.velocity.y;
+	// end temporary bouncer
+
+	// temporary OB handler
+	if (this.newPos.x > boundaryLength ||
+		this.newPos.y < 0) {
+		console.log("You're out of bounds.");
+		return null;
+	}
+	// end temporary OB handler
+
 	var obstacle = level.obstacleAt(this);
 	if (obstacle)
 		level.interactWith(this, obstacle);
-	this.pos = newPos;
+	this.pos = this.newPos;
 	var crushable = level.crushableAt(this.pos);
 	if (crushable) 
 		level.interactWith(this, crushable);
@@ -127,14 +149,17 @@ Projectile.prototype.act = function(deltaT, level) {
 function Target (pos) {
 	this.pos = pos;
 	this.power = 4;
-	this.size = new Vector(0.5, 0.5);
-	this.interact = function (obj) {
-		delete obj;
-		this.power -= 2
-	};
+	this.size = new Vector(1, 1);
 }
 
 Target.prototype.type = "target";
+Target.prototype.act = function() {
+	// Placeholder
+};
+Target.prototype.interact = function (obj) {
+	delete obj;
+	this.power -= 2
+};
 
 /*
 function HardWall() {}
@@ -191,10 +216,10 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
 		var aObstacle = this.activeGrid[i];
 		if (aObstacle != actor && !aObstacle.crushable &&
-				xEnd > aObstacle.newPos.x &&
-				xStart < aObstacle.newPos.x + aObstacle.size.x &&
-				yEnd > aObstacle.newPos.y &&
-				yStart < aObstacle.newPos.y + aObstacle.size.y)
+				xEnd > aObstacle.pos.x &&
+				xStart < aObstacle.pos.x + aObstacle.size.x &&
+				yEnd > aObstacle.pos.y &&
+				yStart < aObstacle.pos.y + aObstacle.size.y)
 			return aObstacle; 
 	}
 };
@@ -316,10 +341,11 @@ Vector.prototype.scale = function(scalar) {
 // Calculate Launch Velocity Using Simple Impulse Equations
 // launchAngle in radians, launchForce in newtons, timeApplied
 // in seconds, projMass in kg
+// make sure that the sign is correct on Y-axis
 function impulse(launchAngle, launchForce, timeApplied, projMass) {
 	var xVelocity = launchForce * Math.cos(launchAngle) * 							
 										timeApplied / projMass;         									
-	var yVelocity = (launchForce * Math.sin(launchAngle) - G) *  		
+	var yVelocity = (-1 * launchForce * Math.sin(launchAngle) + G) *  		
 										timeApplied / projMass;  
 	var velocity = new Vector(xVelocity, yVelocity);
 	return velocity;
@@ -372,11 +398,67 @@ function runAnimation(frameFunc) {
 	requestAnimationFrame(frame);
 }
 
-
-
 /**************/
 /* Some Tests */
 /**************/
+
+// Temporary animation tester
+var level = new WorldBuilder(Level1Plan);
+var display = null;
+var startTime = null;
+var maxStep = 0.05;
+var hotRound = null;
+var tracker = [];
+function testAnimation(timestamp) {
+	if (!startTime) startTime = timestamp;
+	// convert to seconds
+	var deltaT = Math.min(timestamp - startTime, 100) / 1000;
+	
+	level.animate(deltaT);
+	display.drawFrame;
+	if (hotRound) {
+		tracker.push(level.activeGrid[2].pos);
+	}
+	console.log(tracker[tracker.length - 1].x);
+	console.log(tracker[tracker.length - 1].y);
+	startTime = timestamp;
+	requestAnimationFrame(testAnimation);
+}
+var startTest = function(func) {
+	requestAnimationFrame(func);
+	level.activeGrid[0].fire();
+	hotRound = true;
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+	display = new DOMDisplay(document.body, level);
+});
+// End temporary animation tester
+
+// OB Handler 1
+var boundaryLength = level.staticGrid[0].length;
+function OBH1(obj) {
+	if (obj.newPos.x > boundaryLength ||
+		obj.newPos.y < 0) {
+		console.log("You're out of bounds.");
+		return null;
+	}
+}
+// End OB Handler 1
+
+// Step by step animation tester
+var fRate = 1 / 60 // seconds per frame
+
+function singleFrame() {
+	level.activeGrid[0].fire();
+	level.animate(fRate);
+	display.drawFrame;
+	tracker.push(level.activeGrid[2].pos);
+	console.log(tracker[tracker.length - 1].x);
+	console.log(tracker[tracker.length - 1].y);
+}
+// End step by step tester.
+
 
 /*
 // Test launcher.

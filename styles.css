@@ -13,9 +13,12 @@
 .HardWall { background: red; }
 .SoftWall { background: yellow; }
 
-.projectile		 { background: rgb(255, 100, 100); }
+.projectile		 { 
+	position: absolute;
+	background: black; }
+
 .launcher { 
-	position: relative;
+	position: absolute;
 	background: black;              
 	}
 
@@ -26,4 +29,8 @@
 	z-index: 100; 
 }
 
-.Target				 { background: white;							 }
+.target				 { 
+	position: absolute;	
+	background: white;
+						 
+}
