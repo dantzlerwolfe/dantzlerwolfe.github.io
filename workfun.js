@@ -74,7 +74,7 @@ function findPos (array, string) {
 function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
-	this.launchAngle = Math.PI/4; 																			
+	this.launchAngle = Math.PI/3; 																			
 	this.forceMultiple = 22.59; 																
 	this.timeApplied = 2;  																		
 	this.ammo = 5;
@@ -415,12 +415,12 @@ function testAnimation(timestamp) {
 	var deltaT = Math.min(timestamp - startTime, 100) / 1000;
 	
 	level.animate(deltaT);
-	display.drawFrame;
+	display.drawFrame();
 	if (hotRound) {
 		tracker.push(level.activeGrid[2].pos);
 	}
-	console.log(tracker[tracker.length - 1].x);
-	console.log(tracker[tracker.length - 1].y);
+	console.log("x - " + tracker[tracker.length - 1].x + 
+		", y - " + tracker[tracker.length - 1].y);
 	startTime = timestamp;
 	requestAnimationFrame(testAnimation);
 }
@@ -452,7 +452,7 @@ var fRate = 1 / 60 // seconds per frame
 function singleFrame() {
 	level.activeGrid[0].fire();
 	level.animate(fRate);
-	display.drawFrame;
+	display.drawFrame();
 	tracker.push(level.activeGrid[2].pos);
 	console.log(tracker[tracker.length - 1].x);
 	console.log(tracker[tracker.length - 1].y);
