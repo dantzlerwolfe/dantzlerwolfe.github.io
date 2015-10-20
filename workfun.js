@@ -30,7 +30,6 @@ var progress = 1,
 		currentLevel = "Level" + progress.toString() + "Plan",
 		levelData = window[currentLevel].pop(),
 		G = gravities[levelData.name];
-		// G = gravities["Earth"];
 
 
 /***************/
@@ -75,19 +74,27 @@ function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
 	this.launchAngle = Math.PI/3; 																			
-	this.forceMultiple = 22.59; 																
-	this.timeApplied = 2;  																		
+	this.forceMultiple = 5; //22.59 works																
+	this.timeApplied = 2;  			// 2 works															
 	this.ammo = 5;
-	this.initialForce = this.forceMultiple * G;											
+	this.initialForce = this.forceMultiple * 9.81;											
 }
 
 Launcher.prototype.fire = function() {
-	var newRound = new Projectile(this.pos);
-	var velocity = impulse(this.launchAngle, this.initialForce, 
-			this.timeApplied, newRound.mass);
-	newRound.velocity = velocity;
-	level.activeGrid.push(newRound);
-	this.ammo--;
+	if (this.ammo > 0) {
+		var newRound = new Projectile(this.pos);
+		var velocity = impulse(this.launchAngle, this.initialForce, 
+				this.timeApplied, newRound.mass);
+		newRound.velocity = velocity;
+		level.activeGrid.push(newRound);
+		var timeoutID = window.setTimeout(function(newRound) {
+			newRound.ghost = false;
+		}, 500);
+		this.ammo--;
+	} else {
+		console.log("You're out of ammo, sir.");
+		// also change status b/c game over (or buy ammo ha ha)
+	}
 };	
 
 Launcher.prototype.type = "launcher";
@@ -95,7 +102,8 @@ Launcher.prototype.act = function() {
 	// Placeholder
 }
 Launcher.prototype.interact = function(obj) {
-	obj.velocity = obj.velocity.scale(-1);
+	if(!obj.ghost) 
+		obj.velocity = obj.velocity.scale(-1);
 }
 
 function Projectile(pos) {
@@ -104,6 +112,7 @@ function Projectile(pos) {
 	this.size = new Vector(0.5,0.5);
 	this.t0 = new Date().getTime();
 	this.velocity = new Vector(0,0);
+	this.ghost = true;
 }
 
 // Position under constant acceleration. Thanks, Isaac.
@@ -113,6 +122,7 @@ Projectile.prototype.move = function (deltaT) {
 	var newY = this.pos.y + this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
 	var newPos = new Vector(newX, newY);
+	this.velocity.y += G * deltaT
 	return newPos;
 };
 
@@ -122,10 +132,12 @@ Projectile.prototype.act = function(deltaT, level) {
 	this.newPos = this.move(deltaT);
 
 	// temporary bouncer
+	/*
 	if (this.newPos.x >= boundaryLength || this.newPos.x <= 0 ) 
 		this.velocity.x = -1 * this.velocity.x;
 	if (this.newPos.y <= 0 || this.newPos.y >= 9)
 		this.velocity.y = -1 * this.velocity.y;
+	*/
 	// end temporary bouncer
 
 	// temporary OB handler
