@@ -98,11 +98,17 @@ Launcher.prototype.fire = function() {
 Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function() {
 	// Placeholder
-}
-Launcher.prototype.interact = function(obj) {
-	if(!obj.ghost) 
-		obj.velocity = obj.velocity.scale(-1);
-}
+};
+Launcher.prototype.interact = {
+	x: function(obj) {
+			if(!obj.ghost) 
+			obj.velocity.x = obj.velocity.x * -1;
+		},
+	y: function(obj) {
+			if(!obj.ghost) 
+			obj.velocity.y = obj.velocity.y * -1;
+		},
+};
 
 function Projectile(pos) {
 	this.mass = 9.81; // in kilograms																
@@ -158,9 +164,15 @@ Target.prototype.type = "target";
 Target.prototype.act = function() {
 	// Placeholder
 };
-Target.prototype.interact = function (obj) {
-	delete obj;
-	this.power -= 2
+Target.prototype.interact = {
+	x: function (obj) {
+		delete obj;
+		this.power -= 2;
+	},
+	y: function (obj) {
+		delete obj;
+		this.power -= 2;
+	}
 };
 
 /*
@@ -208,9 +220,21 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 // Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
-			var sObstacle = this.staticGrid[y][x]
-			if (sObstacle) 
+			var sObstacle = {};
+			sObstacle.obj = this.staticGrid[y][x];
+			sObstacle.xBlock = null;
+			sObstacle.yBlock = null;
+			if (sObstacle.obj == "HardWall") return sObstacle;
+			else if (sObstacle.obj) {
+				console.log(sObstacle.obj + " " + typeof(sObstacle.obj));
+				if (xEnd > sObstacle.obj.pos.x && 
+						xStart < sObstacle.obj.pos.x + sObstacle.obj.size.x)
+					sObstacle.xBlock = true;
+				if (yEnd > sObstacle.pos.y &&
+						yStart < sObstacle.pos.y + sObstacle.size.y)
+					sObstacle.yBlock = true;
 				return sObstacle; // returns null or string
+			} 
 		}
 	}
 
@@ -229,13 +253,13 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 // Identify obstacles that cause an interaction after impact (i.e. crushables).
 WorldBuilder.prototype.crushableAt = function (actor) {
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
-		var aObstacle = this.activeGrid[i];
-		if (aObstacle != actor && aObstacle.crushable &&
-				xEnd > aObstacle.pos.x &&
-				xStart < aObstacle.pos.x + aObstacle.size.x &&
-				yEnd > aObstacle.pos.y &&
-				yStart < aObstacle.pos.y + aObstacle.size.y)
-			return aObstacle;
+		var cObstacle = this.activeGrid[i];
+		if (cObstacle != actor && cObstacle.crushable &&
+				xEnd > cObstacle.pos.x &&
+				xStart < cObstacle.pos.x + cObstacle.size.x &&
+				yEnd > cObstacle.pos.y &&
+				yStart < cObstacle.pos.y + cObstacle.size.y)
+			return cObstacle;
 	}
 };
 
@@ -254,9 +278,16 @@ WorldBuilder.prototype.animate = function(step, keys) {
 };
 
 WorldBuilder.prototype.interactWith = function(obj1, obj2) {
-	if (obj2 == "HardWall") {
-		obj1.velocity = obj1.velocity.scale(-1);
-	} else obj2.interact(obj1);
+	if (obj2.obj == "HardWall") {
+		if (obj2.xBlock)
+			obj1.velocity.x = obj1.velocity.x * -1;
+		if (obj2.yBlock)
+			obj1.velocity.y = obj1.velocity.y * -1;
+	}
+	if (obj2.xBlock)
+		obj2.obj.interact.x(obj1);
+	if (obj2.yBlock)
+		obj2.obj.interact.y(obj1);
 };
 
 /******************/
