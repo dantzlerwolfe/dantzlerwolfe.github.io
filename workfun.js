@@ -82,14 +82,12 @@ function Launcher(pos) {
 
 Launcher.prototype.fire = function() {
 	if (this.ammo > 0) {
-		var newRound = new Projectile(this.pos);
+		var newRound = new Projectile(this.pos.plus(new Vector(1,0)));
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		newRound.velocity = velocity;
 		level.activeGrid.push(newRound);
-		var timeoutID = window.setTimeout(function(newRound) {
-			newRound.ghost = false;
-		}, 500);
+		newRound.ghostChange();
 		this.ammo--;
 	} else {
 		console.log("You're out of ammo, sir.");
@@ -115,6 +113,8 @@ function Projectile(pos) {
 	this.ghost = true;
 }
 
+Projectile.prototype.type = "projectile";
+
 // Position under constant acceleration. Thanks, Isaac.
 // t0 = time when projectile is fired.
 Projectile.prototype.move = function (deltaT) {
@@ -126,36 +126,26 @@ Projectile.prototype.move = function (deltaT) {
 	return newPos;
 };
 
-Projectile.prototype.type = "projectile";
+var timeoutID;
+Projectile.prototype.ghostChange = function() {
+		timeoutID = window.setTimeout(function() {
+			var activeLength = level.activeGrid.length;
+			level.activeGrid[activeLength - 1].ghost = false;
+		}, 500);
+};
 
 Projectile.prototype.act = function(deltaT, level) {
 	this.newPos = this.move(deltaT);
 
-	// temporary bouncer
-	/*
-	if (this.newPos.x >= boundaryLength || this.newPos.x <= 0 ) 
-		this.velocity.x = -1 * this.velocity.x;
-	if (this.newPos.y <= 0 || this.newPos.y >= 9)
-		this.velocity.y = -1 * this.velocity.y;
-	*/
-	// end temporary bouncer
-
-	// temporary OB handler
-	if (this.newPos.x > boundaryLength ||
-		this.newPos.y < 0) {
-		console.log("You're out of bounds.");
-		return null;
-	}
-	// end temporary OB handler
-
 	var obstacle = level.obstacleAt(this);
 	if (obstacle)
 		level.interactWith(this, obstacle);
-	this.pos = this.newPos;
-	var crushable = level.crushableAt(this.pos);
-	if (crushable) 
-		level.interactWith(this, crushable);
-	console.log()
+	else {
+		this.pos = this.newPos;
+		var crushable = level.crushableAt(this.pos);
+		if (crushable) 
+			level.interactWith(this, crushable);
+	}
 };
 
 function Target (pos) {
