@@ -43,7 +43,7 @@ var activeTokens = {
 				// "s": SoftWall
 		},
 		staticTokens = {
-				"x": "HardWall", 
+				"x": HardWall, 
 		};
 
 // Used to locate only activeTokens 
@@ -70,6 +70,20 @@ function findPos (array, string) {
 // properties (e.g. forceMultiple, size, ammo, etc.).
 // Think about letting a single Launcher fire projectiles of 
 // different masses.
+function HardWall(pos) {
+	this.pos = pos;
+}
+
+Hardwall.prototype.type = "Hardwall";
+Hardwall.prototype.interact = function(obj) {
+	x: function(obj) {
+			obj.velocity.x *= -1;
+		},
+	y: function(obj) { 
+			obj.velocity.y *= -1;
+		},
+};
+
 function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
@@ -102,11 +116,11 @@ Launcher.prototype.act = function() {
 Launcher.prototype.interact = {
 	x: function(obj) {
 			if(!obj.ghost) 
-			obj.velocity.x = obj.velocity.x * -1;
+			obj.velocity.x *= -1;
 		},
 	y: function(obj) {
 			if(!obj.ghost) 
-			obj.velocity.y = obj.velocity.y * -1;
+			obj.velocity.y *= -1;
 		},
 };
 
@@ -315,8 +329,6 @@ function DOMDisplay(parent, level) {
 DOMDisplay.prototype.drawBackground = function () {
 	var table = elMaker("table", "background");
 	table.style.width = this.level.width * scale + "px";
-
-// this.level has a staticGrid property only if it's WorldBuilder.
 
 	this.level.staticGrid.forEach(function(row) {
 		var rowEl = table.appendChild(elMaker("tr"));
