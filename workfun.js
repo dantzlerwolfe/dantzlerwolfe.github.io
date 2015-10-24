@@ -40,10 +40,10 @@ var activeTokens = {
 				"L": Launcher,
 				"P": Projectile,
 				"T": Target,
-				// "s": SoftWall
 		},
+		// No two static tokens can have the same type
 		staticTokens = {
-				"x": HardWall, 
+				"x": new HardWall(), 
 		};
 
 // Used to locate only activeTokens 
@@ -70,12 +70,10 @@ function findPos (array, string) {
 // properties (e.g. forceMultiple, size, ammo, etc.).
 // Think about letting a single Launcher fire projectiles of 
 // different masses.
-function HardWall(pos) {
-	this.pos = pos;
-}
+function HardWall() {}
 
-Hardwall.prototype.type = "Hardwall";
-Hardwall.prototype.interact = function(obj) {
+HardWall.prototype.type = "HardWall";
+HardWall.prototype.interact = {
 	x: function(obj) {
 			obj.velocity.x *= -1;
 		},
@@ -83,13 +81,14 @@ Hardwall.prototype.interact = function(obj) {
 			obj.velocity.y *= -1;
 		},
 };
+HardWall.prototype.size = new Vector(1,1);
 
 function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
 	this.launchAngle = Math.PI/3; 																			
-	this.forceMultiple = 5; //22.59 works																
-	this.timeApplied = 2;  			// 2 works															
+	this.forceMultiple = 5; 															
+	this.timeApplied = 2;  																		
 	this.ammo = 5;
 	this.initialForce = this.forceMultiple * 9.81;											
 }
@@ -216,7 +215,7 @@ function WorldBuilder (plan) {
 			if (aToken)
 				this.activeGrid.push(new aToken(new Vector(x,y), ch));
 			else if (sToken) 
-				type = sToken;
+				type = sToken.type;
 			staticSlice.push(type);
 		}
 		this.staticGrid.push(staticSlice);
@@ -231,22 +230,33 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 	var yStart = Math.floor(actor.newPos.y);
 	var yEnd = Math.ceil(actor.newPos.y + actor.size.y);
 
+	var xEndActual = actor.newPos.x + actor.size.x;
+	var yEndActual = actor.newPos.y + actor.size.y;
+
+	function yTest(x, y, obj) {
+		var deltaX = x - xEndActual;
+		var yPrime = yEndActual + (actor.velocity.y / actor.velocity.x) * deltaX +
+						G / (2 * Math.pow(actor.velocity.x, 2)) * deltaX * deltaX;
+		if (yPrime < y) obj.yBlock = true;
+		else if (yPrime > y) obj.xBlock = true;
+	}
+
 // Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
-			var sObstacle = {};
-			sObstacle.obj = this.staticGrid[y][x];
-			sObstacle.xBlock = null;
-			sObstacle.yBlock = null;
-			if (sObstacle.obj == "HardWall") return sObstacle;
-			else if (sObstacle.obj) {
+			var sObstacle = {
+				obj: null,
+				xBlock: null,
+				yBlock: null
+			}
+			var sType = this.staticGrid[y][x];
+			for (var i in staticTokens) {
+				if (staticTokens[i].type === sType)
+					sObstacle.obj = staticTokens[i];                                   
+			}
+			if (sObstacle.obj) {
 				console.log(sObstacle.obj + " " + typeof(sObstacle.obj));
-				if (xEnd > sObstacle.obj.pos.x && 
-						xStart < sObstacle.obj.pos.x + sObstacle.obj.size.x)
-					sObstacle.xBlock = true;
-				if (yEnd > sObstacle.pos.y &&
-						yStart < sObstacle.pos.y + sObstacle.size.y)
-					sObstacle.yBlock = true;
+				yTest(x, y, sObstacle);
 				return sObstacle; // returns null or string
 			} 
 		}
