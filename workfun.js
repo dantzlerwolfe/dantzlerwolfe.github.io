@@ -155,8 +155,7 @@ Projectile.prototype.ghostChange = function() {
 
 Projectile.prototype.act = function(deltaT, level) {
 	this.newPos = this.move(deltaT);
-
-	var obstacle = level.obstacleAt(this);
+	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	if (obstacle)
 		level.interactWith(this, obstacle);
 	else {
@@ -198,6 +197,7 @@ function SoftWall() {}
 /*************************************/
 
 var scale = 20;
+var xStart, xEnd, yStart, yEnd;
 
 // Initialize Level 
 function WorldBuilder (plan) {
@@ -224,31 +224,54 @@ function WorldBuilder (plan) {
 }
 
 // Identify obstacles that cause an interaction prior to impact.
-WorldBuilder.prototype.obstacleAt = function (actor) {
-	var xStart = Math.floor(actor.newPos.x);
-	var xEnd = Math.ceil(actor.newPos.x + actor.size.x);
-	var yStart = Math.floor(actor.newPos.y);
-	var yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+WorldBuilder.prototype.sObstacleAt = function (actor) {
+	// Create a buffer around actor (depends on direction of motion)
+	if (actor.velocity.x < 0) xStart = Math.floor(actor.newPos.x) - 1; 
+	else xStart = Math.floor(actor.newPos.x);
 
-	var xEndActual = actor.newPos.x + actor.size.x;
-	var yEndActual = actor.newPos.y + actor.size.y;
+	if (actor.velocity.y < 0) yStart = Math.floor(actor.newPos.y) - 1;
+	else yStart = Math.floor(actor.newPos.y);
 
-	function yTest(x, y, obj) {
-		var deltaX = x - xEndActual;
-		var yPrime = yEndActual + (actor.velocity.y / actor.velocity.x) * deltaX +
-						G / (2 * Math.pow(actor.velocity.x, 2)) * deltaX * deltaX;
-		if (yPrime < y) obj.yBlock = true;
-		else if (yPrime > y) obj.xBlock = true;
+	xEnd = Math.ceil(actor.newPos.x + actor.size.x);
+	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+
+	// initialize sObstacle
+	var sObstacle = {
+		obj: null,
+		xBlock: null,
+		yBlock: null
+	}
+
+	function yTest(x, y, obstacle) {
+		// contact points for actor and obstacle
+		var actX, actY, objX, objY;
+		if (actor.velocity.x >= 0) {
+			actX = actor.newPos.x + actor.size.x;
+			objX = x;
+		} else {
+			actX = actor.newPos.x;
+			objX = x + obstacle.obj.size.x;
+		}
+		if (actor.velocity.y >= 0) {
+			actY = actor.newPos.y + actor.size.y;
+			objY = y;
+		} else { 
+			actY = actor.newPos.y;
+			objY = y + obstacle.obj.size.y;
+		}
+		// calculate the y coordinate of actor's leading corner when
+		// x coordinate of actor's leading corner meets the obstacle
+		var deltaX = objX - actX;
+		var yPrime = actY + (actor.velocity.y / actor.velocity.x) * deltaX +
+						G / (2 * Math.pow(actor.velocity.y, 2)) * deltaX * deltaX;
+		if (yPrime < objY) { 
+			obstacle.yBlock = true;
+		} else if (yPrime > objY) obstacle.xBlock = true;
 	}
 
 // Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
-			var sObstacle = {
-				obj: null,
-				xBlock: null,
-				yBlock: null
-			}
 			var sType = this.staticGrid[y][x];
 			for (var i in staticTokens) {
 				if (staticTokens[i].type === sType)
@@ -261,8 +284,15 @@ WorldBuilder.prototype.obstacleAt = function (actor) {
 			} 
 		}
 	}
+};
 
-// Check for active obstacles.
+WorldBuilder.prototype.aObstacleAt = function (actor) {
+
+	xStart = Math.floor(actor.newPos.x);
+	yStart = Math.floor(actor.newPos.y);
+	xEnd = Math.ceil(actor.newPos.x + actor.size.x);
+	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+	// Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
 		var aObstacle = this.activeGrid[i];
 		if (aObstacle != actor && !aObstacle.crushable &&
@@ -302,16 +332,9 @@ WorldBuilder.prototype.animate = function(step, keys) {
 };
 
 WorldBuilder.prototype.interactWith = function(obj1, obj2) {
-	if (obj2.obj == "HardWall") {
-		if (obj2.xBlock)
-			obj1.velocity.x = obj1.velocity.x * -1;
-		if (obj2.yBlock)
-			obj1.velocity.y = obj1.velocity.y * -1;
-	}
-	if (obj2.xBlock)
-		obj2.obj.interact.x(obj1);
-	if (obj2.yBlock)
-		obj2.obj.interact.y(obj1);
+	console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
+	if (obj2.xBlock) obj2.obj.interact.x(obj1);
+	if (obj2.yBlock) obj2.obj.interact.y(obj1);
 };
 
 /******************/
