@@ -223,15 +223,12 @@ function WorldBuilder (plan) {
 	this.status = this.finishDelay = null;
 }
 
-// Identify obstacles that cause an interaction prior to impact.
+// Identify static obstacles that cause an interaction prior to impact.
 WorldBuilder.prototype.sObstacleAt = function (actor) {
-	// Create a buffer around actor (depends on direction of motion)
-	if (actor.velocity.x < 0) xStart = Math.floor(actor.newPos.x) - 1; 
-	else xStart = Math.floor(actor.newPos.x);
 
-	if (actor.velocity.y < 0) yStart = Math.floor(actor.newPos.y) - 1;
-	else yStart = Math.floor(actor.newPos.y);
-
+	// Define scan area
+	xStart = Math.floor(actor.newPos.x);
+	yStart = Math.floor(actor.newPos.y);
 	xEnd = Math.ceil(actor.newPos.x + actor.size.x);
 	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
 
@@ -242,34 +239,7 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 		yBlock: null
 	}
 
-	function yTest(x, y, obstacle) {
-		// contact points for actor and obstacle
-		var actX, actY, objX, objY;
-		if (actor.velocity.x >= 0) {
-			actX = actor.newPos.x + actor.size.x;
-			objX = x;
-		} else {
-			actX = actor.newPos.x;
-			objX = x + obstacle.obj.size.x;
-		}
-		if (actor.velocity.y >= 0) {
-			actY = actor.newPos.y + actor.size.y;
-			objY = y;
-		} else { 
-			actY = actor.newPos.y;
-			objY = y + obstacle.obj.size.y;
-		}
-		// calculate the y coordinate of actor's leading corner when
-		// x coordinate of actor's leading corner meets the obstacle
-		var deltaX = objX - actX;
-		var yPrime = actY + (actor.velocity.y / actor.velocity.x) * deltaX +
-						G / (2 * Math.pow(actor.velocity.y, 2)) * deltaX * deltaX;
-		if (yPrime < objY) { 
-			obstacle.yBlock = true;
-		} else if (yPrime > objY) obstacle.xBlock = true;
-	}
-
-// Check for static obstacles.
+	// Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
 			var sType = this.staticGrid[y][x];
@@ -284,8 +254,51 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 			} 
 		}
 	}
+
+	function yTest(x, y, obstacle) {
+		// find leading corner and test which edge hits first
+		var xLead, yLead, deltaX, yZero, yPrime;
+		
+		if (actor.velocity.x >= 0) { 
+			xLead = actor.pos.x + actor.size.x; 
+			deltaX = x - xLead;
+			if (xLead >= x) { obstacle.yBlock = true; }
+		} else { 
+			xLead = actor.pos.x; 
+			deltaX = (x + 1) - xLead;
+			if (xLead <= x + 1) { obstacle.yBlock = true; }
+		}
+		
+		if (actor.velocity.y >= 0) { 
+			yLead = actor.pos.y + actor.size.y; 
+			if (yLead >= y) { obstacle.xBlock = true; } 
+		} else { 
+			yLead = actor.pos.y; 
+			if (yLead <= y + 1) { obstacle.xBlock = true; }
+		}
+
+		if (!obstacle.xBlock && !obstacle.yBlock) {
+			yPrime = dZone(actor.velocity, deltaX, yLead);
+		
+		}
+
+	}
+
+	// Calculate the y coordinate of actor's leading corner when
+	// x coordinate of actor's leading corner meets the obstacle.
+	function dZone(velocity, deltaX, yZero) {
+		var yPrime = yZero + (velocity.y / velocity.x) * deltaX +
+								 G / (2 * Math.pow(velocity.y, 2)) * deltaX * deltaX;
+		if(velocity.y >= 0 && yPrime >= y) { obstacle.xBlock = true; }
+			else if (velocity.y >= 0 && yPrime < y) { obstacle.yBlock = true; }
+		if(velocity.y < 0 && yPrime <= y + 1) { obstacle.xBlock = true; }
+			else if (velocity.y < 0 && yPrime > y + 1) { obstacle.yBlock = true; }
+		return yPrime;
+	}
+
 };
 
+// Identify actors that cause interaction prior to impact.
 WorldBuilder.prototype.aObstacleAt = function (actor) {
 
 	xStart = Math.floor(actor.newPos.x);
