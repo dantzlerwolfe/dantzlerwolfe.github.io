@@ -278,7 +278,7 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 		}
 
 		if (!obstacle.xBlock && !obstacle.yBlock) {
-			yPrime = dZone(actor.velocity, deltaX, yLead);
+			dZone(obstacle, actor.velocity, deltaX, yLead);
 		
 		}
 
@@ -286,14 +286,13 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 
 	// Calculate the y coordinate of actor's leading corner when
 	// x coordinate of actor's leading corner meets the obstacle.
-	function dZone(velocity, deltaX, yZero) {
+	function dZone(obstacle, velocity, deltaX, yZero) {
 		var yPrime = yZero + (velocity.y / velocity.x) * deltaX +
 								 G / (2 * Math.pow(velocity.y, 2)) * deltaX * deltaX;
 		if(velocity.y >= 0 && yPrime >= y) { obstacle.xBlock = true; }
 			else if (velocity.y >= 0 && yPrime < y) { obstacle.yBlock = true; }
 		if(velocity.y < 0 && yPrime <= y + 1) { obstacle.xBlock = true; }
 			else if (velocity.y < 0 && yPrime > y + 1) { obstacle.yBlock = true; }
-		return yPrime;
 	}
 
 };
