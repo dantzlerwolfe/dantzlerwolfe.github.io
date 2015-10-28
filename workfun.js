@@ -160,7 +160,7 @@ Projectile.prototype.act = function(deltaT, level) {
 		level.interactWith(this, obstacle);
 	else {
 		this.pos = this.newPos;
-		var crushable = level.crushableAt(this.pos);
+		var crushable = level.crushableAt(this);
 		if (crushable) 
 			level.interactWith(this, crushable);
 	}
@@ -237,7 +237,7 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 		obj: null,
 		xBlock: null,
 		yBlock: null
-	}
+	};
 
 	// Check for static obstacles.
 	for (var y = yStart; y < yEnd; y++) {
@@ -249,56 +249,63 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 			}
 			if (sObstacle.obj) {
 				console.log(sObstacle.obj + " " + typeof(sObstacle.obj));
-				yTest(x, y, sObstacle);
-				return sObstacle; // returns null or string
+				yTest(x, y, sObstacle, actor);
+				return sObstacle; 
 			} 
 		}
 	}
-
-	function yTest(x, y, obstacle) {
-		// find leading corner and test which edge hits first
-		var xLead, yLead, deltaX, yZero, yPrime;
-		
-		if (actor.velocity.x >= 0) { 
-			xLead = actor.pos.x + actor.size.x; 
-			deltaX = x - xLead;
-			if (xLead >= x) { obstacle.yBlock = true; }
-		} else { 
-			xLead = actor.pos.x; 
-			deltaX = (x + 1) - xLead;
-			if (xLead <= x + 1) { obstacle.yBlock = true; }
-		}
-		
-		if (actor.velocity.y >= 0) { 
-			yLead = actor.pos.y + actor.size.y; 
-			if (yLead >= y) { obstacle.xBlock = true; } 
-		} else { 
-			yLead = actor.pos.y; 
-			if (yLead <= y + 1) { obstacle.xBlock = true; }
-		}
-
-		if (!obstacle.xBlock && !obstacle.yBlock) {
-			dZone(obstacle, actor.velocity, deltaX, yLead);
-		
-		}
-
-	}
-
-	// Calculate the y coordinate of actor's leading corner when
-	// x coordinate of actor's leading corner meets the obstacle.
-	function dZone(obstacle, velocity, deltaX, yZero) {
-		var yPrime = yZero + (velocity.y / velocity.x) * deltaX +
-								 G / (2 * Math.pow(velocity.y, 2)) * deltaX * deltaX;
-		if(velocity.y >= 0 && yPrime >= y) { obstacle.xBlock = true; }
-			else if (velocity.y >= 0 && yPrime < y) { obstacle.yBlock = true; }
-		if(velocity.y < 0 && yPrime <= y + 1) { obstacle.xBlock = true; }
-			else if (velocity.y < 0 && yPrime > y + 1) { obstacle.yBlock = true; }
-	}
-
 };
+
+function yTest(x, y, obstacle, actor) {
+	// find leading corner and test which edge hits first
+	var xLead, yLead, deltaX, yZero, yPrime;
+	
+	if (actor.velocity.x >= 0) { 
+		xLead = actor.pos.x + actor.size.x; 
+		deltaX = x - xLead;
+		if (xLead >= x) { obstacle.yBlock = true; }
+	} else { 
+		xLead = actor.pos.x; 
+		deltaX = (x + 1) - xLead;
+		if (xLead <= x + 1) { obstacle.yBlock = true; }
+	}
+	
+	if (actor.velocity.y >= 0) { 
+		yLead = actor.pos.y + actor.size.y; 
+		if (yLead >= y) { obstacle.xBlock = true; } 
+	} else { 
+		yLead = actor.pos.y; 
+		if (yLead <= y + 1) { obstacle.xBlock = true; }
+	}
+
+	if (!obstacle.xBlock && !obstacle.yBlock) {
+		dZone(obstacle, actor.velocity, deltaX, yLead, y);
+	
+	}
+
+}
+
+// Calculate the y coordinate of actor's leading corner when
+// x coordinate of actor's leading corner meets the obstacle.
+function dZone(obstacle, velocity, deltaX, yZero, yObst) {
+	var yPrime = yZero + (velocity.y / velocity.x) * deltaX +
+							 G / (2 * Math.pow(velocity.y, 2)) * deltaX * deltaX;
+	if(velocity.y >= 0 && yPrime >= yObst) { obstacle.xBlock = true; }
+		else if (velocity.y >= 0 && yPrime < yObst) { obstacle.yBlock = true; }
+	if(velocity.y < 0 && yPrime <= yObst + 1) { obstacle.xBlock = true; }
+		else if (velocity.y < 0 && yPrime > yObst + 1) { obstacle.yBlock = true; }
+}
+
+
 
 // Identify actors that cause interaction prior to impact.
 WorldBuilder.prototype.aObstacleAt = function (actor) {
+	// initialize aObstacle
+	var aObstacle = {
+		obj: null,
+		xBlock: null,
+		yBlock: null
+	};
 
 	xStart = Math.floor(actor.newPos.x);
 	yStart = Math.floor(actor.newPos.y);
@@ -306,26 +313,46 @@ WorldBuilder.prototype.aObstacleAt = function (actor) {
 	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
 	// Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
-		var aObstacle = this.activeGrid[i];
-		if (aObstacle != actor && !aObstacle.crushable &&
-				xEnd > aObstacle.pos.x &&
-				xStart < aObstacle.pos.x + aObstacle.size.x &&
-				yEnd > aObstacle.pos.y &&
-				yStart < aObstacle.pos.y + aObstacle.size.y)
-			return aObstacle; 
+		aObstacle.obj = this.activeGrid[i];
+		var obstacle = aObstacle.obj;
+		if (obstacle != actor && !obstacle.crushable &&
+				xEnd > obstacle.pos.x &&
+				xStart < obstacle.pos.x + obstacle.size.x &&
+				yEnd > obstacle.pos.y &&
+				yStart < obstacle.pos.y + obstacle.size.y) {
+
+			yTest(obstacle.pos.x, obstacle.pos.y, aObstacle, actor);
+			return aObstacle;
+		} 
 	}
 };
 
 // Identify obstacles that cause an interaction after impact (i.e. crushables).
 WorldBuilder.prototype.crushableAt = function (actor) {
+
+	var cObstacle = {
+		obj: null,
+		xBlock: null,
+		yBlock: null
+	};
+
+	xStart = Math.floor(actor.pos.x);
+	yStart = Math.floor(actor.pos.y);
+	xEnd = Math.ceil(actor.pos.x + actor.size.x);
+	yEnd = Math.ceil(actor.pos.y + actor.size.y);
+
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
-		var cObstacle = this.activeGrid[i];
-		if (cObstacle != actor && cObstacle.crushable &&
-				xEnd > cObstacle.pos.x &&
-				xStart < cObstacle.pos.x + cObstacle.size.x &&
-				yEnd > cObstacle.pos.y &&
-				yStart < cObstacle.pos.y + cObstacle.size.y)
+		cObstacle.obj = this.activeGrid[i];
+		var obstacle = cObstacle.obj;
+		if (obstacle != actor && obstacle.crushable &&
+				xEnd > obstacle.pos.x &&
+				xStart < obstacle.pos.x + obstacle.size.x &&
+				yEnd > obstacle.pos.y &&
+				yStart < obstacle.pos.y + obstacle.size.y) {
+
+			yTest(obstacle.pos.x, obstacle.pos.y, cObstacle, actor);
 			return cObstacle;
+		}
 	}
 };
 
@@ -344,7 +371,9 @@ WorldBuilder.prototype.animate = function(step, keys) {
 };
 
 WorldBuilder.prototype.interactWith = function(obj1, obj2) {
+	// Test xBlock values
 	console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
+	// end test
 	if (obj2.xBlock) obj2.obj.interact.x(obj1);
 	if (obj2.yBlock) obj2.obj.interact.y(obj1);
 };
