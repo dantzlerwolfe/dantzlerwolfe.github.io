@@ -141,8 +141,8 @@ Projectile.prototype.move = function (deltaT) {
 	var newY = this.pos.y + this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
 	var newPos = new Vector(newX, newY);
-	this.velocity.y += G * deltaT
-	return newPos;
+	var newYVelocity = this.velocity.y + G * deltaT;
+	return { "newPos": newPos, "newYVelocity": newYVelocity };
 };
 
 var timeoutID;
@@ -154,12 +154,15 @@ Projectile.prototype.ghostChange = function() {
 };
 
 Projectile.prototype.act = function(deltaT, level) {
-	this.newPos = this.move(deltaT);
+	this.newStats = this.move(deltaT);
+	this.newPos = this.newStats["newPos"];
+	this.newYVelocity = this.newStats["newYVelocity"];
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	if (obstacle)
 		level.interactWith(this, obstacle);
 	else {
 		this.pos = this.newPos;
+		this.velocity.y = this.newYVelocity;
 		var crushable = level.crushableAt(this);
 		if (crushable) 
 			level.interactWith(this, crushable);
@@ -178,11 +181,11 @@ Target.prototype.act = function() {
 };
 Target.prototype.interact = {
 	x: function (obj) {
-		delete obj;
+		obj.velocity.x *= -0.5;
 		this.power -= 2;
 	},
 	y: function (obj) {
-		delete obj;
+		obj.velocity.y *= -0.5;
 		this.power -= 2;
 	}
 };
@@ -256,6 +259,8 @@ WorldBuilder.prototype.sObstacleAt = function (actor) {
 	}
 };
 
+// (x,y) is the position of the obstacle. obstacle and actor
+// are objects representing those things.
 function yTest(x, y, obstacle, actor) {
 	// find leading corner and test which edge hits first
 	var xLead, yLead, deltaX, yZero, yPrime;
@@ -277,7 +282,8 @@ function yTest(x, y, obstacle, actor) {
 		yLead = actor.pos.y; 
 		if (yLead <= y + 1) { obstacle.xBlock = true; }
 	}
-
+	
+	// Daaanger Zone! 
 	if (!obstacle.xBlock && !obstacle.yBlock) {
 		dZone(obstacle, actor.velocity, deltaX, yLead, y);
 	
@@ -336,10 +342,10 @@ WorldBuilder.prototype.crushableAt = function (actor) {
 		yBlock: null
 	};
 
-	xStart = Math.floor(actor.pos.x);
-	yStart = Math.floor(actor.pos.y);
-	xEnd = Math.ceil(actor.pos.x + actor.size.x);
-	yEnd = Math.ceil(actor.pos.y + actor.size.y);
+	xStart = actor.pos.x;
+	yStart = actor.pos.y;
+	xEnd = actor.pos.x + actor.size.x;
+	yEnd = actor.pos.y + actor.size.y;
 
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
 		cObstacle.obj = this.activeGrid[i];
