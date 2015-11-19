@@ -154,15 +154,16 @@ Projectile.prototype.ghostChange = function() {
 };
 
 Projectile.prototype.act = function(deltaT, level) {
-	this.newStats = this.move(deltaT);
-	this.newPos = this.newStats["newPos"];
-	this.newYVelocity = this.newStats["newYVelocity"];
+	var newStats = this.move(deltaT);
+	var newYVelocity = newStats["newYVelocity"];
+	this.newPos = newStats["newPos"];
+	
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	if (obstacle)
 		level.interactWith(this, obstacle);
 	else {
 		this.pos = this.newPos;
-		this.velocity.y = this.newYVelocity;
+		this.velocity.y = newYVelocity;
 		var crushable = level.crushableAt(this);
 		if (crushable) 
 			level.interactWith(this, crushable);
