@@ -3,7 +3,7 @@
 /* Level Plans */
 /***************/
 
-var Level1Plan = [
+var levelPlans = [[
 	"                        ",
 	"                        ",
 	"                        ",
@@ -16,20 +16,21 @@ var Level1Plan = [
 	"  x   L xx       T   x  ",
 	"  xxxxxxxxxxxxxxxxxxxx  ",
 	"                        ",
-	{name: "Earth"}
-];
+	{name: "Earth", G: 9.81}
+]];
 
-// Gravitational Constants
+/* // Gravitational Constants
 var gravities = {
 	Earth: 9.81,
 	Mars: 3.71,
 	Jupiter: 24.8
 };
+*/
 
 var progress = 1,
-		currentLevel = "Level" + progress.toString() + "Plan",
+		currentLevel = levelPlans[progress],
 		levelData = window[currentLevel].pop(),
-		G = gravities[levelData.name];
+		G = levelData["G"];
 
 
 /***************/
@@ -483,12 +484,14 @@ function impulse(launchAngle, launchForce, timeApplied, projMass) {
 /****************/
 
 function runGame(plans, Display) {
-	function startLevel() {
-		runLevel(new WorldBuilder(plans), Display, function(status) {
+	function startLevel(n) {
+		runLevel(new WorldBuilder(plans[n]), Display, function(status) {
 			if (status == "lost")
-				startLevel();
-			else
-				console.log("You win?");
+				startLevel(n);
+			else if (n < plans.length - 1)
+        startLevel(n + 1);
+      else
+        console.log("You win!");
 		});
 	}
 	startLevel();
