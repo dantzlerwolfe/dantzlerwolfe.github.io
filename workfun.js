@@ -28,8 +28,8 @@ var gravities = {
 */
 
 var progress = 1,
-		currentLevel = levelPlans[progress],
-		levelData = window[currentLevel].pop(),
+		currentLevel = levelPlans[progress - 1],
+		levelData = window["currentLevel"].pop(),
 		G = levelData["G"];
 
 
@@ -531,8 +531,9 @@ function runAnimation(frameFunc) {
 /* Some Tests */
 /**************/
 
+
 // Temporary animation tester
-var level = new WorldBuilder(Level1Plan);
+var level = new WorldBuilder(currentLevel);
 var display = null;
 var startTime = null;
 var maxStep = 0.05;
@@ -564,29 +565,29 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 // End temporary animation tester
 
-// OB Handler 1
-var boundaryLength = level.staticGrid[0].length;
-function OBH1(obj) {
-	if (obj.newPos.x > boundaryLength ||
-		obj.newPos.y < 0) {
-		console.log("You're out of bounds.");
-		return null;
-	}
-}
-// End OB Handler 1
+// // OB Handler 1
+// var boundaryLength = level.staticGrid[0].length;
+// function OBH1(obj) {
+// 	if (obj.newPos.x > boundaryLength ||
+// 		obj.newPos.y < 0) {
+// 		console.log("You're out of bounds.");
+// 		return null;
+// 	}
+// }
+// // End OB Handler 1
 
-// Step by step animation tester
-var fRate = 1 / 60 // seconds per frame
+// // Step by step animation tester
+// var fRate = 1 / 60 // seconds per frame
 
-function singleFrame() {
-	level.activeGrid[0].fire();
-	level.animate(fRate);
-	display.drawFrame();
-	tracker.push(level.activeGrid[2].pos);
-	console.log(tracker[tracker.length - 1].x);
-	console.log(tracker[tracker.length - 1].y);
-}
-// End step by step tester.
+// function singleFrame() {
+// 	level.activeGrid[0].fire();
+// 	level.animate(fRate);
+// 	display.drawFrame();
+// 	tracker.push(level.activeGrid[2].pos);
+// 	console.log(tracker[tracker.length - 1].x);
+// 	console.log(tracker[tracker.length - 1].y);
+// }
+// // End step by step tester.
 
 
 /*
@@ -606,4 +607,4 @@ function trackerUpdate () {
 	}
 }
 var trackerInterval = window.setInterval(trackerUpdate, 10);
-*/
+*/s
