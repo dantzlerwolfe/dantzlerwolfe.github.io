@@ -137,14 +137,7 @@ Projectile.prototype.type = "projectile";
 
 // Position under constant acceleration. Thanks, Isaac.
 // t0 = time when projectile is fired.
-Projectile.prototype.move = function (deltaT) {
-	var newX = this.pos.x + this.velocity.x * deltaT;
-	var newY = this.pos.y + this.velocity.y * deltaT + 
-						 1/2 * G * deltaT * deltaT;
-	var newPos = new Vector(newX, newY);
-	var newYVelocity = this.velocity.y + G * deltaT;
-	return { "newPos": newPos, "newYVelocity": newYVelocity };
-};
+Projectile.prototype.move = move(deltaT);
 
 var timeoutID;
 Projectile.prototype.ghostChange = function() {
@@ -205,7 +198,7 @@ var scale = 20;
 var xStart, xEnd, yStart, yEnd;
 
 // Initialize Level 
-function WorldBuilder (plan) {
+function Level (plan) {
 	this.width = plan[0].length;
 	this.height = plan.length;
 	this.staticGrid = [];
@@ -229,7 +222,7 @@ function WorldBuilder (plan) {
 }
 
 // Identify static obstacles that cause an interaction prior to impact.
-WorldBuilder.prototype.sObstacleAt = function (actor) {
+Level.prototype.sObstacleAt = function (actor) {
 
 	// Define scan area
 	xStart = Math.floor(actor.newPos.x);
@@ -307,7 +300,7 @@ function dZone(obstacle, velocity, deltaX, yZero, yObst) {
 
 
 // Identify actors that cause interaction prior to impact.
-WorldBuilder.prototype.aObstacleAt = function (actor) {
+Level.prototype.aObstacleAt = function (actor) {
 	// initialize aObstacle
 	var aObstacle = {
 		obj: null,
@@ -336,7 +329,7 @@ WorldBuilder.prototype.aObstacleAt = function (actor) {
 };
 
 // Identify obstacles that cause an interaction after impact (i.e. crushables).
-WorldBuilder.prototype.crushableAt = function (actor) {
+Level.prototype.crushableAt = function (actor) {
 
 	var cObstacle = {
 		obj: null,
@@ -365,7 +358,7 @@ WorldBuilder.prototype.crushableAt = function (actor) {
 };
 
 // Move Actors
-WorldBuilder.prototype.animate = function(step, keys) {
+Level.prototype.animate = function(step, keys) {
 	if (this.status != null)
 		this.finishDelay -= step;
 
@@ -378,7 +371,7 @@ WorldBuilder.prototype.animate = function(step, keys) {
 	}
 };
 
-WorldBuilder.prototype.interactWith = function(obj1, obj2) {
+Level.prototype.interactWith = function(obj1, obj2) {
 	// Test xBlock values
 	console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
 	// end test
@@ -478,6 +471,17 @@ function impulse(launchAngle, launchForce, timeApplied, projMass) {
 	return velocity;
 }
 
+// Position under constant acceleration. Thanks, Isaac.
+// t0 = time when projectile is fired.
+function move(deltaT) {
+	var newX = this.pos.x + this.velocity.x * deltaT;
+	var newY = this.pos.y + this.velocity.y * deltaT + 
+						 1/2 * G * deltaT * deltaT;
+	var newPos = new Vector(newX, newY);
+	var newYVelocity = this.velocity.y + G * deltaT;
+	return { "newPos": newPos, "newYVelocity": newYVelocity };
+};
+
 
 /****************/
 /* Run the Game */
@@ -485,7 +489,7 @@ function impulse(launchAngle, launchForce, timeApplied, projMass) {
 
 function runGame(plans, Display) {
 	function startLevel(n) {
-		runLevel(new WorldBuilder(plans[n]), Display, function(status) {
+		runLevel(new Level(plans[n]), Display, function(status) {
 			if (status == "lost")
 				startLevel(n);
 			else if (n < plans.length - 1)
@@ -494,7 +498,7 @@ function runGame(plans, Display) {
         console.log("You win!");
 		});
 	}
-	startLevel();
+	startLevel(0);
 }
 
 function runLevel(level, Display, andThen) {
@@ -531,9 +535,9 @@ function runAnimation(frameFunc) {
 /* Some Tests */
 /**************/
 
-
+/*
 // Temporary animation tester
-var level = new WorldBuilder(currentLevel);
+var level = new Level(currentLevel);
 var display = null;
 var startTime = null;
 var maxStep = 0.05;
@@ -564,6 +568,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	display = new DOMDisplay(document.body, level);
 });
 // End temporary animation tester
+*/
 
 // // OB Handler 1
 // var boundaryLength = level.staticGrid[0].length;
@@ -607,4 +612,4 @@ function trackerUpdate () {
 	}
 }
 var trackerInterval = window.setInterval(trackerUpdate, 10);
-*/s
+*/

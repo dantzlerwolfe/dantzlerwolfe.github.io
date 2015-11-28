@@ -1,3 +1,14 @@
+Welcome to Domtastic
+
 Hi. I'm John.
 
-This project is based in part on chapter 15 of Marijn Haverbeke's Eloquent Javascript. I've adopted his general approach to manipulating the DOM and attempt to apply it to my simple projectile game I've called DOMTASTIC. The goal is to achieve, through customization, an understanding of the underlying techniques used in the chapter. This includes encapsulation, use of higher-order functions and basic asynchronous programming. 
+This project was started as an attempt to understand chapter 15 of [Marijn Haverbeke's Eloquent Javascript](http://eloquentjavascript.net/index.html) by adapting his code to a simple projectile game I've called DOMTASTIC. The goal is to achieve, through customization, an understanding of the underlying techniques used in the chapter, including encapsulation, use of higher-order functions and basic asynchronous programming. 
+
+##Unique/Heavily Modified Elements:
+
+1. **Simple Projectile Motion:** Added constant acceleration equations to handle simple motion of objects in freefall. See *math/physics* section of the main script file. 
+2. **Obstacle Handling:** Instead of setting collision behaviors based on a fixed boundary (which Haverbeke does for collisions with the static grid), I've made each collision an object to object interaction. The user can define the result of a given collision by modifying an object's `interact` method. One consequence of this approach is that an object must have a lot of information about the path it has taken to a given collision. To handle this, Domtastic uses an object's leading corner as its reference point. The `yTest` and `dZone` methods provide outcomes for various approach vectors, and those outcomes in turn affect the way the `interactWith` method handles the collisions.
+
+Other Elements have been either left intact or lightly modified to handle Domtastic's unique functionality.
+
+If you see something you dislike, please feel free to comment and/or suggest modifications. But just remember one thing: I'm a lawyer, not an engineer (yet).
