@@ -110,9 +110,10 @@ Launcher.prototype.fire = function() {
 };	
 
 Launcher.prototype.type = "launcher";
-Launcher.prototype.act = function() {
-	// Placeholder
+Launcher.prototype.act = function(deltaT, level, controlObj) {
+	this.launchAngle = controlObj["launchAngle"];
 };
+
 Launcher.prototype.interact = {
 	x: function(obj) {
 			if(!obj.ghost) 
@@ -137,7 +138,7 @@ Projectile.prototype.type = "projectile";
 
 // Position under constant acceleration. Thanks, Isaac.
 // t0 = time when projectile is fired.
-Projectile.prototype.move = move(deltaT);
+Projectile.prototype.move = move;
 
 var timeoutID;
 Projectile.prototype.ghostChange = function() {
@@ -357,15 +358,25 @@ Level.prototype.crushableAt = function (actor) {
 	}
 };
 
+// Listen for User Input
+function launchControl () {
+	var controlObj = Object.create(null);
+	var launchAngle = document.getElementById("launch-angle");
+	controlObj["launchAngle"] = launchAngle.value;
+	return controlObj;
+}
+
 // Move Actors
-Level.prototype.animate = function(step, keys) {
+var controller = launchControl();
+
+Level.prototype.animate = function(step, controller) {
 	if (this.status != null)
 		this.finishDelay -= step;
 
 	while (step > 0) {
 		var thisStep = Math.min(step, maxStep);
 		this.activeGrid.forEach(function(actor) {
-			actor.act(thisStep, this, keys)
+			actor.act(thisStep, this, controller)
 		}, this);
 		step -= thisStep
 	}
@@ -373,10 +384,14 @@ Level.prototype.animate = function(step, keys) {
 
 Level.prototype.interactWith = function(obj1, obj2) {
 	// Test xBlock values
-	console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
+	// console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
 	// end test
 	if (obj2.xBlock) obj2.obj.interact.x(obj1);
 	if (obj2.yBlock) obj2.obj.interact.y(obj1);
+};
+
+Level.prototype.isFinished = function() {
+  return this.status != null && this.finishDelay < 0;
 };
 
 /******************/
@@ -534,6 +549,22 @@ function runAnimation(frameFunc) {
 /**************/
 /* Some Tests */
 /**************/
+
+// Test Form Handler
+document.addEventListener("DOMContentLoaded", afterDOM, false);
+
+function afterDOM() {
+	var testForm = document.getElementById("test-form");
+	var testSubmit = document.getElementById("test-submit");
+	var testInput = document.getElementById("test-input");
+	
+	function publishInput() {
+		console.log(testInput.value);
+		event.preventDefault();
+	}
+
+testForm.addEventListener('submit', publishInput, false);
+}
 
 /*
 // Temporary animation tester

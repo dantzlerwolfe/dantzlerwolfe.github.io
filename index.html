@@ -6,11 +6,20 @@
 	<script src="workfun.js"></script>
 </head>
 <body>
-	<button onclick=startTest(testAnimation)>FIRE!</button>
-	<!-- <script type="text/javascript">
-		addEventListener("click", function() {
-			console.log("Boom, Motherfucker!");
-		});
-	</script> -->
+	<div>
+		<script>
+	    runGame(levelPlans, DOMDisplay);
+	  </script>
+	</div>
+	<div>
+		<form action="" method="get" id="launch-controls">
+			Launch Angle:<input type="text" name="launch-angle" value="45" id="launch-angle">
+			<input type="submit">
+		</form>
+		<form id="test-form">
+			<input type="text" name="test-input" value="test" id="test-input">
+			<input type="submit" id="submit-test">
+		</form>
+	</div>
 </body>
 </html>
