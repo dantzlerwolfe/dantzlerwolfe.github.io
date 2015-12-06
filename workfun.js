@@ -112,6 +112,7 @@ Launcher.prototype.fire = function() {
 Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function(deltaT, level, controlObj) {
 	this.launchAngle = controlObj["launchAngle"];
+	// console.log(this.launchAngle);
 };
 
 Launcher.prototype.interact = {
@@ -196,6 +197,7 @@ function SoftWall() {}
 /*************************************/
 
 var scale = 20;
+var maxStep = 0.05;
 var xStart, xEnd, yStart, yEnd;
 
 // Initialize Level 
@@ -358,17 +360,6 @@ Level.prototype.crushableAt = function (actor) {
 	}
 };
 
-// Listen for User Input
-function launchControl () {
-	var controlObj = Object.create(null);
-	var launchAngle = document.getElementById("launch-angle");
-	controlObj["launchAngle"] = launchAngle.value;
-	return controlObj;
-}
-
-// Move Actors
-var controller = launchControl();
-
 Level.prototype.animate = function(step, controller) {
 	if (this.status != null)
 		this.finishDelay -= step;
@@ -502,6 +493,18 @@ function move(deltaT) {
 /* Run the Game */
 /****************/
 
+// Listen for User Input
+function launchControl (inputNode) {
+	var controlObj = Object.create(null);
+	var launchAngle = inputNode.value;
+	// console.log(launchAngle);
+	controlObj["launchAngle"] = launchAngle;
+	// console.log(controlObj);
+	return controlObj;
+}
+
+// Move Actors
+// var controller = launchControl();
 function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(status) {
@@ -513,13 +516,23 @@ function runGame(plans, Display) {
         console.log("You win!");
 		});
 	}
-	startLevel(0);
+	document.addEventListener("DOMContentLoaded", function() {
+		// alert("Content loaded.");
+		// console.log(document.getElementById("launch-angle"));
+		startLevel(0);
+	}, false);
+	// document.addEventListener("DOMContentLoaded", startLevel(0), false);
+	// startLevel(0);
 }
 
 function runLevel(level, Display, andThen) {
-	var display = new Display(document.body, level);
+	var targetNode = document.getElementById("game-div");
+	var display = new Display(targetNode, level);
+	var inputAngle = document.getElementById("launch-angle");
+	console.log(inputAngle);
 	runAnimation(function(step) {
-		level.animate(step, arrows);
+		var controller = launchControl(inputAngle);
+		level.animate(step, controller);
 		display.drawFrame(step);
 		if (level.isFinished()) {
 			display.clear();
@@ -551,20 +564,21 @@ function runAnimation(frameFunc) {
 /**************/
 
 // Test Form Handler
-document.addEventListener("DOMContentLoaded", afterDOM, false);
+// document.addEventListener("DOMContentLoaded", afterDOM, false);
 
-function afterDOM() {
-	var testForm = document.getElementById("test-form");
-	var testSubmit = document.getElementById("test-submit");
-	var testInput = document.getElementById("test-input");
+// function afterDOM() {
+// 	var testForm = document.getElementById("test-form");
+// 	var testSubmit = document.getElementById("test-submit");
+// 	var testInput = document.getElementById("test-input");
+// 	window.inputAngle = document.getElementById("launch-angle");
 	
-	function publishInput() {
-		console.log(testInput.value);
-		event.preventDefault();
-	}
+// 	function publishInput() {
+// 		console.log(testInput.value);
+// 		event.preventDefault();
+// 	}
 
-testForm.addEventListener('submit', publishInput, false);
-}
+// testForm.addEventListener('submit', publishInput, false);
+// }
 
 /*
 // Temporary animation tester
