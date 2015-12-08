@@ -95,14 +95,14 @@ function Launcher(pos) {
 }
 
 // Takes the activeGrid as its parameter
-Launcher.prototype.fire = function(actors) {
+Launcher.prototype.fire = function(level) {
 	if (this.ammo > 0) {
 		var newRound = new Projectile(this.pos.plus(new Vector(1,0)));
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		newRound.velocity = velocity;
-		actors.push(newRound);
-		newRound.ghostChange();
+		level.activeGrid.push(newRound);
+		newRound.ghostChange(level);
 		console.log("fire");
 		this.ammo--;
 	} else {
@@ -113,8 +113,7 @@ Launcher.prototype.fire = function(actors) {
 
 Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function(deltaT, level, controlObj) {
-	this.launchAngle = controlObj["launchAngle"];
-	// console.log(this.launchAngle);
+	console.log(this.launchAngle);
 };
 
 Launcher.prototype.interact = {
@@ -144,7 +143,7 @@ Projectile.prototype.type = "projectile";
 Projectile.prototype.move = move;
 
 var timeoutID;
-Projectile.prototype.ghostChange = function() {
+Projectile.prototype.ghostChange = function(level) {
 		timeoutID = window.setTimeout(function() {
 			var activeLength = level.activeGrid.length;
 			level.activeGrid[activeLength - 1].ghost = false;
@@ -495,21 +494,22 @@ function move(deltaT) {
 /* Run the Game */
 /****************/
 
-// Listen for User Input
-// If the control panel is modified to include other
-// inputs, then launchControl should accept an object
-// as input so that it can handle the multiple values.
-function launchControl (inputNode) {
+function launchControl (level) {
 	var controlObj = Object.create(null);
-	var launchAngle = inputNode.value;
-	// console.log(launchAngle);
-	controlObj["launchAngle"] = launchAngle;
-	// console.log(controlObj);
-	return controlObj;
+	var launchAngle = document.getElementById("launch-angle");
+	var fireButton = document.getElementById("fire-button");
+	var launcher = level.activeGrid[0];
+	
+	launchAngle.addEventListener("input", function() {
+		launcher.launchAngle = launchAngle.value;
+		}, false);
+	fireButton.addEventListener("click", function() {
+		launcher.fire(level);
+		}, false);
 }
 
 // Move Actors
-// var controller = launchControl();
+
 function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(status) {
@@ -529,21 +529,12 @@ function runGame(plans, Display) {
 function runLevel(level, Display, andThen) {
 	// Store game div
 	var targetNode = document.getElementById("game-div");
-	// input nodes
-	var inputAngle = document.getElementById("launch-angle");
-	var fireButton = document.getElementById("fire-button");
 	// Initialize display
 	var display = new Display(targetNode, level);
-	// Store local variables
-	var localActors = display.level.activeGrid;
-	var localLauncher = localActors[0];
-	fireButton.addEventListener("click", function() {
-		console.log(localLauncher);
-		localLauncher.fire(localActors);
-	}, false);
-	console.log(display.level.activeGrid[0]);
+	launchControl(level);
+	var controller = Object.create(null);
 	runAnimation(function(step) {
-		var controller = launchControl(inputAngle);
+		// var controller = launchControl(inputAngle);
 		level.animate(step, controller);
 		display.drawFrame(step);
 		if (level.isFinished()) {
