@@ -94,14 +94,16 @@ function Launcher(pos) {
 	this.initialForce = this.forceMultiple * 9.81;											
 }
 
-Launcher.prototype.fire = function() {
+// Takes the activeGrid as its parameter
+Launcher.prototype.fire = function(actors) {
 	if (this.ammo > 0) {
 		var newRound = new Projectile(this.pos.plus(new Vector(1,0)));
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		newRound.velocity = velocity;
-		level.activeGrid.push(newRound);
+		actors.push(newRound);
 		newRound.ghostChange();
+		console.log("fire");
 		this.ammo--;
 	} else {
 		console.log("You're out of ammo, sir.");
@@ -494,6 +496,9 @@ function move(deltaT) {
 /****************/
 
 // Listen for User Input
+// If the control panel is modified to include other
+// inputs, then launchControl should accept an object
+// as input so that it can handle the multiple values.
 function launchControl (inputNode) {
 	var controlObj = Object.create(null);
 	var launchAngle = inputNode.value;
@@ -517,19 +522,26 @@ function runGame(plans, Display) {
 		});
 	}
 	document.addEventListener("DOMContentLoaded", function() {
-		// alert("Content loaded.");
-		// console.log(document.getElementById("launch-angle"));
 		startLevel(0);
 	}, false);
-	// document.addEventListener("DOMContentLoaded", startLevel(0), false);
-	// startLevel(0);
 }
 
 function runLevel(level, Display, andThen) {
+	// Store game div
 	var targetNode = document.getElementById("game-div");
-	var display = new Display(targetNode, level);
+	// input nodes
 	var inputAngle = document.getElementById("launch-angle");
-	console.log(inputAngle);
+	var fireButton = document.getElementById("fire-button");
+	// Initialize display
+	var display = new Display(targetNode, level);
+	// Store local variables
+	var localActors = display.level.activeGrid;
+	var localLauncher = localActors[0];
+	fireButton.addEventListener("click", function() {
+		console.log(localLauncher);
+		localLauncher.fire(localActors);
+	}, false);
+	console.log(display.level.activeGrid[0]);
 	runAnimation(function(step) {
 		var controller = launchControl(inputAngle);
 		level.animate(step, controller);
