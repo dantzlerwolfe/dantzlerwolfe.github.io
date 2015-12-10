@@ -97,12 +97,13 @@ function Launcher(pos) {
 // Takes the activeGrid as its parameter
 Launcher.prototype.fire = function(level) {
 	if (this.ammo > 0) {
-		var newRound = new Projectile(this.pos.plus(new Vector(1,0)));
+		var newRound = new Projectile(this.pos.plus(new Vector(1, -0.5)));
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
+		// velocity.x = Number(velocity.x.toFixed(4));
 		newRound.velocity = velocity;
 		level.activeGrid.push(newRound);
-		newRound.ghostChange(level);
+		newRound.ghostChange(newRound);
 		console.log("fire");
 		this.ammo--;
 	} else {
@@ -113,7 +114,7 @@ Launcher.prototype.fire = function(level) {
 
 Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function(deltaT, level, controlObj) {
-	console.log(this.launchAngle);
+	// console.log(this.launchAngle);
 };
 
 Launcher.prototype.interact = {
@@ -142,11 +143,10 @@ Projectile.prototype.type = "projectile";
 // t0 = time when projectile is fired.
 Projectile.prototype.move = move;
 
-var timeoutID;
-Projectile.prototype.ghostChange = function(level) {
-		timeoutID = window.setTimeout(function() {
-			var activeLength = level.activeGrid.length;
-			level.activeGrid[activeLength - 1].ghost = false;
+// var timeoutID;
+Projectile.prototype.ghostChange = function(obj) {
+		var timeoutID = window.setTimeout(function() {
+			obj.ghost = false;
 		}, 500);
 };
 
@@ -156,15 +156,35 @@ Projectile.prototype.act = function(deltaT, level) {
 	this.newPos = newStats["newPos"];
 	
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
-	if (obstacle)
+	if (obstacle) {
 		level.interactWith(this, obstacle);
+		console.log(level.activeGrid.indexOf(this) + " O - " + 
+			this.velocity.x + ", " + this.velocity.y);
+		console.log(level.activeGrid.indexOf(this) + " O - " + 
+			this.pos.x + ", " + this.pos.y);
+	}
 	else {
 		this.pos = this.newPos;
 		this.velocity.y = newYVelocity;
-		var crushable = level.crushableAt(this);
-		if (crushable) 
-			level.interactWith(this, crushable);
+		console.log(level.activeGrid.indexOf(this) + " N - " + 
+			this.velocity.x + ", " + this.velocity.y);
+		console.log(level.activeGrid.indexOf(this) + " N - " + 
+			this.pos.x + ", " + this.pos.y);
+		// var crushable = level.crushableAt(this);
+		// if (crushable) 
+		// 	level.interactWith(this, crushable);
 	}
+};
+
+Projectile.prototype.interact = {
+	x: function(obj) {
+			if(!obj.ghost) 
+			obj.velocity.x *= -1;
+		},
+	y: function(obj) {
+			if(!obj.ghost) 
+			obj.velocity.y *= -1;
+		},
 };
 
 function Target (pos) {
@@ -301,8 +321,6 @@ function dZone(obstacle, velocity, deltaX, yZero, yObst) {
 		else if (velocity.y < 0 && yPrime > yObst + 1) { obstacle.yBlock = true; }
 }
 
-
-
 // Identify actors that cause interaction prior to impact.
 Level.prototype.aObstacleAt = function (actor) {
 	// initialize aObstacle
@@ -312,21 +330,31 @@ Level.prototype.aObstacleAt = function (actor) {
 		yBlock: null
 	};
 
-	xStart = Math.floor(actor.newPos.x);
-	yStart = Math.floor(actor.newPos.y);
-	xEnd = Math.ceil(actor.newPos.x + actor.size.x);
-	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+	// xStart = Math.floor(actor.newPos.x);
+	// yStart = Math.floor(actor.newPos.y);
+	// xEnd = Math.ceil(actor.newPos.x + actor.size.x);
+	// yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+	xStart = actor.newPos.x;
+	yStart = actor.newPos.y;
+	xEnd = actor.newPos.x + actor.size.x;
+	yEnd = actor.newPos.y + actor.size.y;
+
 	// Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
 		aObstacle.obj = this.activeGrid[i];
 		var obstacle = aObstacle.obj;
-		if (obstacle != actor && !obstacle.crushable &&
-				xEnd > obstacle.pos.x &&
-				xStart < obstacle.pos.x + obstacle.size.x &&
-				yEnd > obstacle.pos.y &&
-				yStart < obstacle.pos.y + obstacle.size.y) {
+		var testPos;
+		if(obstacle.newPos) {
+			testPos = obstacle.newPos;
+		} else testPos = obstacle.pos;
+		// removed && !obstacle.crushable from condition list below
+		if (obstacle != actor &&
+				xEnd > testPos.x &&
+				xStart < testPos.x + obstacle.size.x &&
+				yEnd > testPos.y &&
+				yStart < testPos.y + obstacle.size.y) {
 
-			yTest(obstacle.pos.x, obstacle.pos.y, aObstacle, actor);
+			yTest(testPos.x, testPos.y, aObstacle, actor);
 			return aObstacle;
 		} 
 	}
@@ -482,10 +510,13 @@ function impulse(launchAngle, launchForce, timeApplied, projMass) {
 // t0 = time when projectile is fired.
 function move(deltaT) {
 	var newX = this.pos.x + this.velocity.x * deltaT;
+	// newX = Number(newX.toFixed(4));
 	var newY = this.pos.y + this.velocity.y * deltaT + 
 						 1/2 * G * deltaT * deltaT;
+	// newY = Number(newY.toFixed(4));
 	var newPos = new Vector(newX, newY);
 	var newYVelocity = this.velocity.y + G * deltaT;
+	// newYVelocity = Number(newYVelocity.toFixed(4));
 	return { "newPos": newPos, "newYVelocity": newYVelocity };
 };
 
@@ -501,11 +532,13 @@ function launchControl (level) {
 	var launcher = level.activeGrid[0];
 	
 	launchAngle.addEventListener("input", function() {
-		launcher.launchAngle = launchAngle.value;
+		launcher.launchAngle = launchAngle.value / 360 * (2 * Math.PI);
 		}, false);
 	fireButton.addEventListener("click", function() {
 		launcher.fire(level);
 		}, false);
+
+	return controlObj;
 }
 
 // Move Actors
@@ -531,8 +564,8 @@ function runLevel(level, Display, andThen) {
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
 	var display = new Display(targetNode, level);
-	launchControl(level);
-	var controller = Object.create(null);
+	// Initialize controller
+	var controller = launchControl(level);
 	runAnimation(function(step) {
 		// var controller = launchControl(inputAngle);
 		level.animate(step, controller);
