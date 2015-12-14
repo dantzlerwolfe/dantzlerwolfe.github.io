@@ -1,9 +1,10 @@
 
-/***************/
-/* Level Plans */
-/***************/
+/**************/
+/* Blueprints */
+/**************/
 
-var levelPlans = [[
+var levelPlans = [
+[
 	"                        ",
 	"                        ",
 	"                        ",
@@ -16,8 +17,19 @@ var levelPlans = [[
 	"  x   L xx       T   x  ",
 	"  xxxxxxxxxxxxxxxxxxxx  ",
 	"                        ",
-	{name: "Earth", G: 9.81}
-]];
+	{
+		name: "Earth", 
+		G: 9.81,
+		message: 
+			"This thing all things devours:\n\
+			Birds, beasts, trees, flowers;\n\
+			Gnaws iron, bites steel;\n\
+			Grinds hard stones to meal;\n\
+			Slays king, ruins town,\n\
+			And beats high mountain down."
+	}
+]
+];
 
 /* // Gravitational Constants
 var gravities = {
@@ -31,7 +43,6 @@ var progress = 1,
 		currentLevel = levelPlans[progress - 1],
 		levelData = window["currentLevel"].pop(),
 		G = levelData["G"];
-
 
 /***************/
 /* Plan Legend */
@@ -242,7 +253,9 @@ function Level (plan) {
 		}
 		this.staticGrid.push(staticSlice);
 	}
-	this.status = this.finishDelay = null;
+	this.finishDelay = null;
+	this.status = null;
+
 }
 
 // Identify static obstacles that cause an interaction prior to impact.
@@ -410,6 +423,15 @@ Level.prototype.interactWith = function(obj1, obj2) {
 	if (obj2.yBlock) obj2.obj.interact.y(obj1);
 };
 
+Level.prototype.pauseToggler = function (level, frameFunc) {
+	if (level.status == "paused") {
+		level.status = null;
+		runAnimation(frameFunc);
+	} else if (level.status == null) {
+			level.status = "paused";
+	}
+}
+
 Level.prototype.isFinished = function() {
   return this.status != null && this.finishDelay < 0;
 };
@@ -521,14 +543,22 @@ function move(deltaT) {
 };
 
 
+/*****************/
+/* Message Board */
+/*****************/
+
+
+
 /****************/
 /* Run the Game */
 /****************/
 
-function launchControl (level) {
+// Launch Controls
+function launchControl (level, frameFunc) {
 	var controlObj = Object.create(null);
 	var launchAngle = document.getElementById("launch-angle");
 	var fireButton = document.getElementById("fire-button");
+	var pauseButton = document.getElementById("pause-button");
 	var launcher = level.activeGrid[0];
 	
 	launchAngle.addEventListener("input", function() {
@@ -537,6 +567,9 @@ function launchControl (level) {
 	fireButton.addEventListener("click", function() {
 		launcher.fire(level);
 		}, false);
+	pauseButton.addEventListener("click", function () {
+		level.pauseToggler(level, frameFunc);
+	}, false);
 
 	return controlObj;
 }
@@ -564,10 +597,14 @@ function runLevel(level, Display, andThen) {
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
 	var display = new Display(targetNode, level);
+	var levelStatus = level.status
 	// Initialize controller
-	var controller = launchControl(level);
-	runAnimation(function(step) {
-		// var controller = launchControl(inputAngle);
+	var controller = launchControl(level, frameFunc);
+	function frameFunc (step) {
+		if (level.status == "paused") {
+			return false;
+		}
+
 		level.animate(step, controller);
 		display.drawFrame(step);
 		if (level.isFinished()) {
@@ -576,7 +613,8 @@ function runLevel(level, Display, andThen) {
 				andThen(level.status);
 			return false;
 		}
-	});
+	}
+	runAnimation(frameFunc);
 }
 
 function runAnimation(frameFunc) {
@@ -590,7 +628,7 @@ function runAnimation(frameFunc) {
 		lastTime = time;
 		if (!stop) {
 			requestAnimationFrame(frame);
-		}
+		} 
 	}
 	requestAnimationFrame(frame);
 }

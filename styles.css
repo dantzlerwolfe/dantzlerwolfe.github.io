@@ -34,3 +34,14 @@
 	background: white;
 						 
 }
+
+.messenger {
+	position: absolute;
+	padding: 10px 20px;
+}
+
+.messenger-hidden {
+	position: absolute;
+	padding: 10px 20px;
+	opacity: 0;
+}
