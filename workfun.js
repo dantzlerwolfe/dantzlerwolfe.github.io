@@ -154,9 +154,9 @@ Projectile.prototype.type = "projectile";
 // t0 = time when projectile is fired.
 Projectile.prototype.move = move;
 
-// var timeoutID;
+
 Projectile.prototype.ghostChange = function(obj) {
-		var timeoutID = window.setTimeout(function() {
+		window.setTimeout(function() {
 			obj.ghost = false;
 		}, 500);
 };
@@ -206,6 +206,8 @@ function Target (pos) {
 }
 
 Target.prototype.type = "target";
+
+
 Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power == 1 && this.hit) {
 		console.log(controlObj.messageText);
@@ -214,13 +216,14 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
 		console.log("What's going on?");
-		var timeoutID = window.setTimeout(function() {
+			level.timeouts.impact1 = window.setTimeout(function() {
 			console.log("timeOut executed");
 			controlObj.messageBoard.className = "messenger-hidden";
 		}, 1000);	
 	}
 
 	if(this.power <= 0 && this.hit) {
+		window.clearTimeout(level.timeouts.impact1);
 		level.status = "pausedWin";
 		controlObj.messageText.textContent = "You've done it, Commander!"
 		controlObj.messageBoard.className = "messenger";
@@ -459,6 +462,8 @@ Level.prototype.pauseToggler = function (level, frameFunc) {
 			runAnimation(frameFunc);
 	}
 }
+
+Level.prototype.timeouts = {};
 
 Level.prototype.isFinished = function() {
 	console.log(this.status);
