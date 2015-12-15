@@ -1,25 +1,34 @@
 
-.background    { background: rgb(52, 166, 251);
-                 table-layout: fixed;
-                 border-spacing: 0;              }
+body {
+  font-family: monospace;
+  color: green;
+}
+
+.background    { 
+  background: black;
+  background-image: url("assets/starscape.jpg");
+  table-layout: fixed;
+  border-spacing: 0;              
+}
+
 .background td { padding: 0;                     }
 
 .game {
   overflow: hidden;
-  max-width: 600px;
-  max-height: 450px;
+  /*max-width: 600px;
+  max-height: 450px;*/
   position: relative;
 }
-.HardWall { background: red; }
+.HardWall { background: brown; }
 .SoftWall { background: yellow; }
 
 .projectile		 { 
 	position: absolute;
-	background: black; }
+	background: blue; }
 
 .launcher { 
 	position: absolute;
-	background: black;              
+	background: blue;              
 	}
 
 .active { 
@@ -38,9 +47,11 @@
 .messenger {
 	position: absolute;
 	top: 10px;
-	left: 100px;
-	max-width: 250px;
+	left: 20%;
+	max-width: 50%;
 	padding: 10px 20px;
+  font-family: monospace;
+  font-size: 3em;
 }
 
 .messenger-hidden {

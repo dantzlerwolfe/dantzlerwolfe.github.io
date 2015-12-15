@@ -5,18 +5,25 @@
 
 var levelPlans = [
 [
-	"                        ",
-	"                        ",
-	"                        ",
-	"                        ",
-	"                        ",
-	"  x                  x  ",
-	"  x                  x  ",
-	"  x                  x  ",
-	"  x                  x  ",
-	"  x   L xx       T   x  ",
-	"  xxxxxxxxxxxxxxxxxxxx  ",
-	"                        ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                  xx                       ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"  x                                     x  ",
+	"  x                               xx    x  ",
+	"  x          xx                         x  ",
+	"  x                                     x  ",
+	"  x   L xx                   T          x  ",
+	"  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  ",
+	"                                           ",
 	{
 		name: "Earth", 
 		G: 9.81,
@@ -212,7 +219,7 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power == 1 && this.hit) {
 		console.log(controlObj.messageText);
 		console.log("satisfies first condition");
-		controlObj.messageText.textContent = "Direct hit, Commander!"
+		controlObj.messageText.textContent = "Direct hit!"
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
 		console.log("What's going on?");
@@ -256,7 +263,7 @@ function SoftWall() {}
 /* Initialize and Monitor Game State */
 /*************************************/
 
-var scale = 20;
+var scale = 30;
 var maxStep = 0.05;
 var xStart, xEnd, yStart, yEnd;
 
@@ -521,8 +528,7 @@ DOMDisplay.prototype.drawActors = function() {
 };
 
 DOMDisplay.prototype.drawFrame = function() {
-	if (this.activeLayer) 
-		this.wrap.removeChild(this.activeLayer);
+	if (this.activeLayer) { this.wrap.removeChild(this.activeLayer); }
 	this.activeLayer = this.wrap.appendChild(this.drawActors());
 	this.wrap.className = "game " + (this.level.status || "");
 	// this.scrollPlayerIntoView();
