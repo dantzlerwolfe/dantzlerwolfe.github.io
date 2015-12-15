@@ -98,11 +98,11 @@ HardWall.prototype.size = new Vector(1,1);
 function Launcher(pos) {
 	this.pos = pos;
 	this.size = new Vector(1,1);
-	this.launchAngle = Math.PI/3; 																			
-	this.forceMultiple = 5; 															
-	this.timeApplied = 2;  																		
+	this.launchAngle = Math.PI/3;
+	this.forceMultiple = 5;
+	this.timeApplied = 2;
 	this.ammo = 5;
-	this.initialForce = this.forceMultiple * 9.81;											
+	this.initialForce = this.forceMultiple * 9.81;
 }
 
 // Takes the activeGrid as its parameter
@@ -140,7 +140,7 @@ Launcher.prototype.interact = {
 };
 
 function Projectile(pos) {
-	this.mass = 9.81; // in kilograms																
+	this.mass = 9.81; // in kilograms	
 	this.pos = pos
 	this.size = new Vector(0.5,0.5);
 	this.t0 = new Date().getTime();
@@ -169,18 +169,18 @@ Projectile.prototype.act = function(deltaT, level) {
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	if (obstacle) {
 		level.interactWith(this, obstacle);
-		console.log(level.activeGrid.indexOf(this) + " O - " + 
-			this.velocity.x + ", " + this.velocity.y);
-		console.log(level.activeGrid.indexOf(this) + " O - " + 
-			this.pos.x + ", " + this.pos.y);
+		// console.log(level.activeGrid.indexOf(this) + " O - " + 
+		// 	this.velocity.x + ", " + this.velocity.y);
+		// console.log(level.activeGrid.indexOf(this) + " O - " + 
+		// 	this.pos.x + ", " + this.pos.y);
 	}
 	else {
 		this.pos = this.newPos;
 		this.velocity.y = newYVelocity;
-		console.log(level.activeGrid.indexOf(this) + " N - " + 
-			this.velocity.x + ", " + this.velocity.y);
-		console.log(level.activeGrid.indexOf(this) + " N - " + 
-			this.pos.x + ", " + this.pos.y);
+		// console.log(level.activeGrid.indexOf(this) + " N - " + 
+		// 	this.velocity.x + ", " + this.velocity.y);
+		// console.log(level.activeGrid.indexOf(this) + " N - " + 
+		// 	this.pos.x + ", " + this.pos.y);
 		// var crushable = level.crushableAt(this);
 		// if (crushable) 
 		// 	level.interactWith(this, crushable);
@@ -200,22 +200,47 @@ Projectile.prototype.interact = {
 
 function Target (pos) {
 	this.pos = pos;
-	this.power = 4;
+	this.power = 2;
 	this.size = new Vector(1, 1);
+	this.hit = false;
 }
 
 Target.prototype.type = "target";
-Target.prototype.act = function() {
-	// Placeholder
+Target.prototype.act = function(deltaT, level, controlObj) {
+	if(this.power == 1 && this.hit) {
+		console.log(controlObj.messageText);
+		console.log("satisfies first condition");
+		controlObj.messageText.textContent = "Direct hit, Commander!"
+		controlObj.messageBoard.className = "messenger";
+		this.hit = false; 
+		console.log("What's going on?");
+		var timeoutID = window.setTimeout(function() {
+			console.log("timeOut executed");
+			controlObj.messageBoard.className = "messenger-hidden";
+		}, 1000);	
+	}
+
+	if(this.power <= 0 && this.hit) {
+		level.status = "pausedWin";
+		controlObj.messageText.textContent = "You've done it, Commander!"
+		controlObj.messageBoard.className = "messenger";
+		this.hit = false;
+	}
 };
+
 Target.prototype.interact = {
-	x: function (obj) {
-		obj.velocity.x *= -0.5;
-		this.power -= 2;
+	x: function (obj1, obj2) {
+		console.log("x");
+		console.log(obj2);
+		obj1.velocity.x *= -0.5;
+		obj2.power -= 1;
+		obj2.hit = true;
 	},
-	y: function (obj) {
-		obj.velocity.y *= -0.5;
-		this.power -= 2;
+	y: function (obj1, obj2) {
+		console.log("y " + obj2);
+		obj1.velocity.y *= -0.5;
+		obj2.power -= 1;
+		obj2.hit = true;
 	}
 };
 
@@ -254,7 +279,7 @@ function Level (plan) {
 		this.staticGrid.push(staticSlice);
 	}
 	this.finishDelay = null;
-	this.status = null;
+	this.status = "new";
 
 }
 
@@ -283,7 +308,6 @@ Level.prototype.sObstacleAt = function (actor) {
 					sObstacle.obj = staticTokens[i];                                   
 			}
 			if (sObstacle.obj) {
-				console.log(sObstacle.obj + " " + typeof(sObstacle.obj));
 				yTest(x, y, sObstacle, actor);
 				return sObstacle; 
 			} 
@@ -419,8 +443,9 @@ Level.prototype.interactWith = function(obj1, obj2) {
 	// Test xBlock values
 	// console.log("xBlock - " + obj2.xBlock + ", " + "yBlock - " + obj2.yBlock);
 	// end test
-	if (obj2.xBlock) obj2.obj.interact.x(obj1);
-	if (obj2.yBlock) obj2.obj.interact.y(obj1);
+
+	if (obj2.xBlock) obj2.obj.interact.x(obj1, obj2.obj);
+	if (obj2.yBlock) obj2.obj.interact.y(obj1, obj2.obj);
 };
 
 Level.prototype.pauseToggler = function (level, frameFunc) {
@@ -429,11 +454,16 @@ Level.prototype.pauseToggler = function (level, frameFunc) {
 		runAnimation(frameFunc);
 	} else if (level.status == null) {
 			level.status = "paused";
+	} else if (level.status == "pausedWin") {
+			level.status = "won";
+			runAnimation(frameFunc);
 	}
 }
 
 Level.prototype.isFinished = function() {
-  return this.status != null && this.finishDelay < 0;
+	console.log(this.status);
+  return this.status != null && this.status != "pausedWin" && 
+  	this.finishDelay < 0;
 };
 
 /******************/
@@ -556,10 +586,11 @@ function move(deltaT) {
 // Launch Controls
 function launchControl (level, frameFunc) {
 	var controlObj = Object.create(null);
-	var launchAngle = document.getElementById("launch-angle");
 	var fireButton = document.getElementById("fire-button");
-	var pauseButton = document.getElementById("pause-button");
+	var launchAngle = document.getElementById("launch-angle");
 	var launcher = level.activeGrid[0];
+	var messageBoard = document.getElementById("message-board");
+	var pauseButton = document.getElementById("pause-button");
 	
 	launchAngle.addEventListener("input", function() {
 		launcher.launchAngle = launchAngle.value / 360 * (2 * Math.PI);
@@ -570,6 +601,27 @@ function launchControl (level, frameFunc) {
 	pauseButton.addEventListener("click", function () {
 		level.pauseToggler(level, frameFunc);
 	}, false);
+
+	// Initialize Intro Screen
+	if (level.status == "new") {
+		level.status = "paused";
+		messageBoard.innerHTML = "<p id=\"message-text\">Welcome to " + levelData.name + ", Commander. " +
+			"Destroy the Cosmic Dampener to reveal the secret clue left here " +
+			"by the Ancients.</p>" + 
+			"<button type=\"button\" id=\"start-button\">Continue</button>";
+	}
+
+	var startButton = document.getElementById("start-button");
+	var messageText = document.getElementById("message-text");
+	startButton.addEventListener("click", function () {
+		level.pauseToggler(level, frameFunc);
+		messageBoard.className = "messenger-hidden";
+	}, false);
+
+	// Add necessary properties to control object
+	controlObj.messageBoard = messageBoard;
+	controlObj.messageText = messageText;
+	controlObj.startButton = startButton;
 
 	return controlObj;
 }
@@ -597,11 +649,11 @@ function runLevel(level, Display, andThen) {
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
 	var display = new Display(targetNode, level);
-	var levelStatus = level.status
+	// var messageBoard = document.getElementById("message-board");
 	// Initialize controller
 	var controller = launchControl(level, frameFunc);
 	function frameFunc (step) {
-		if (level.status == "paused") {
+		if (level.status == "paused" || level.status == "pausedWin") {
 			return false;
 		}
 

@@ -37,11 +37,17 @@
 
 .messenger {
 	position: absolute;
+	top: 10px;
+	left: 100px;
+	max-width: 250px;
 	padding: 10px 20px;
 }
 
 .messenger-hidden {
 	position: absolute;
+	top: 10px;
+	left: 10px;
+	max-width: 200px;
 	padding: 10px 20px;
 	opacity: 0;
 }
