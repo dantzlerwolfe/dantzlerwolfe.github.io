@@ -118,6 +118,7 @@ Launcher.prototype.fire = function(level) {
 		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
 		var newRound = new Projectile(origin);
 		// var newRound = new Projectile(this.pos.plus(new Vector(.4, .2)));
+		console.log(this);
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		// velocity.x = Number(velocity.x.toFixed(4));
@@ -173,9 +174,23 @@ Projectile.prototype.ghostChange = function(obj) {
 Projectile.prototype.act = function(deltaT, level) {
 	var newStats = this.move(deltaT);
 	var newYVelocity = newStats["newYVelocity"];
-	this.newPos = newStats["newPos"];
-	
+	var testPos = newStats["newPos"];
+	var testLength = level.staticGrid[0].length;
+	var testHeight = level.staticGrid.length;
+
+	// Wrap around behavior
+
+	if(0 <= testPos.x && testPos.x <= testLength && 0 <= testPos.y &&
+		testPos.y <= testHeight) { this.newPos = testPos; }
+
+	if(this.velocity.x < 0 && testPos.x < 0) { this.newPos.x = testLength; }
+	if(this.velocity.x > 0 && testPos.x > testLength) { this.newPos.x = 0; }
+	if(this.velocity.y > 0 && testPos.y > testHeight - 1) { this.newPos.y = 0; }
+
+	// Test for obstacles
+	if(this.newPos.y > 0) {
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
+	}
 	console.log(this.ghost);
 	if (obstacle && !this.ghost) {
 		level.interactWith(this, obstacle);
@@ -225,9 +240,8 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		controlObj.messageText.textContent = "Direct hit!"
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
-		console.log("What's going on?");
-			level.timeouts.impact1 = window.setTimeout(function() {
-			console.log("timeOut executed");
+		level.timeouts.impact1 = window.setTimeout(function() {
+			// console.log("timeOut executed");
 			controlObj.messageBoard.className = "messenger-hidden";
 		}, 1000);	
 	}
@@ -564,6 +578,7 @@ Vector.prototype.scale = function(scalar) {
 // in seconds, projMass in kg
 // make sure that the sign is correct on Y-axis
 function impulse(launchAngle, launchForce, timeApplied, projMass) {
+	console.log(launchForce);
 	var xVelocity = launchForce * Math.cos(launchAngle) * 							
 										timeApplied / projMass;         									
 	var yVelocity = (-1 * launchForce * Math.sin(launchAngle) + G) *  		
@@ -601,15 +616,18 @@ function move(deltaT) {
 function launchControl (level, frameFunc) {
 
 	// Grab elements
+	var launcher = level.activeGrid[0];
+
 	var activeDiv = document.getElementsByClassName("active");
 	var controlObj = Object.create(null);
 	var fireButton = document.getElementById("fire-button");
-	var launchDiv = document.getElementsByClassName("launcher");
+	var initialAngle = launcher.launchAngle / (2 * Math.PI) * 360;
 	var launchAngle = document.getElementById("launch-angle");
-	var launcher = level.activeGrid[0];
+	var launchDiv = document.getElementsByClassName("launcher");
+	var launchPower = document.getElementById("launch-power");
 	var messageBoard = document.getElementById("message-board");
 	var pauseButton = document.getElementById("pause-button");
-	var initialAngle = launcher.launchAngle / (2 * Math.PI) * 360;
+	
 
 	// Insert Launcher graphics
 	var launchStyles = {
@@ -641,7 +659,12 @@ function launchControl (level, frameFunc) {
 		launchPicDiv.style.transform = "rotate(" + (-1) * launchAngle.value + 
 			"deg)";
 		}, false);
+	launchPower.addEventListener("input", function() {
+		launcher.forceMultiple = launchPower.value;
+		launcher.initialForce = launcher.forceMultiple * 9.81;
+	}, false);
 	fireButton.addEventListener("click", function() {
+		console.log(launcher);
 		launcher.fire(level);
 		}, false);
 	pauseButton.addEventListener("click", function () {
