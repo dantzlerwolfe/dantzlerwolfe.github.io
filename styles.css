@@ -1,7 +1,7 @@
 
 body {
   font-family: monospace;
-  color: green;
+  color: #008000;
 }
 
 .background    { 
@@ -19,17 +19,23 @@ body {
   max-height: 450px;*/
   position: relative;
 }
-.HardWall { background: brown; }
+.HardWall { background: #A52A2A; }
 .SoftWall { background: yellow; }
 
 .projectile		 { 
 	position: absolute;
 	background: blue; }
 
-.launcher { 
-	position: absolute;
-	background: blue;              
-	}
+.launcher {
+  position: absolute;
+}
+
+.launch-pic-div {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  z-index: 1000;
+}
 
 .active { 
 	position: absolute;
@@ -46,6 +52,7 @@ body {
 
 .messenger {
 	position: absolute;
+  background-color: black;
 	top: 10px;
 	left: 20%;
 	max-width: 50%;

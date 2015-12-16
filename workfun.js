@@ -20,8 +20,8 @@ var levelPlans = [
 	"  x                                     x  ",
 	"  x                               xx    x  ",
 	"  x          xx                         x  ",
-	"  x                                     x  ",
-	"  x   L xx                   T          x  ",
+	"  x  L                                  x  ",
+	"  x     xx                   T          x  ",
 	"  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  ",
 	"                                           ",
 	{
@@ -115,7 +115,9 @@ function Launcher(pos) {
 // Takes the activeGrid as its parameter
 Launcher.prototype.fire = function(level) {
 	if (this.ammo > 0) {
-		var newRound = new Projectile(this.pos.plus(new Vector(1, -0.5)));
+		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
+		var newRound = new Projectile(origin);
+		// var newRound = new Projectile(this.pos.plus(new Vector(.4, .2)));
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		// velocity.x = Number(velocity.x.toFixed(4));
@@ -165,7 +167,7 @@ Projectile.prototype.move = move;
 Projectile.prototype.ghostChange = function(obj) {
 		window.setTimeout(function() {
 			obj.ghost = false;
-		}, 500);
+		}, 100);
 };
 
 Projectile.prototype.act = function(deltaT, level) {
@@ -174,7 +176,8 @@ Projectile.prototype.act = function(deltaT, level) {
 	this.newPos = newStats["newPos"];
 	
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
-	if (obstacle) {
+	console.log(this.ghost);
+	if (obstacle && !this.ghost) {
 		level.interactWith(this, obstacle);
 		// console.log(level.activeGrid.indexOf(this) + " O - " + 
 		// 	this.velocity.x + ", " + this.velocity.y);
@@ -473,7 +476,7 @@ Level.prototype.pauseToggler = function (level, frameFunc) {
 Level.prototype.timeouts = {};
 
 Level.prototype.isFinished = function() {
-	console.log(this.status);
+	// console.log(this.status);
   return this.status != null && this.status != "pausedWin" && 
   	this.finishDelay < 0;
 };
@@ -594,17 +597,49 @@ function move(deltaT) {
 /* Run the Game */
 /****************/
 
-// Launch Controls
+// Initialize Interface and Graphics
 function launchControl (level, frameFunc) {
+
+	// Grab elements
+	var activeDiv = document.getElementsByClassName("active");
 	var controlObj = Object.create(null);
 	var fireButton = document.getElementById("fire-button");
+	var launchDiv = document.getElementsByClassName("launcher");
 	var launchAngle = document.getElementById("launch-angle");
 	var launcher = level.activeGrid[0];
 	var messageBoard = document.getElementById("message-board");
 	var pauseButton = document.getElementById("pause-button");
-	
+	var initialAngle = launcher.launchAngle / (2 * Math.PI) * 360;
+
+	// Insert Launcher graphics
+	var launchStyles = {
+		top: launchDiv[0].style.top, 
+		left: launchDiv[0].style.left,
+		width: launchDiv[0].style.width,
+		height: launchDiv[0].style.height,
+	};
+	var launchPicDiv = 
+		activeDiv[0].parentNode.appendChild(elMaker("object", "launch-pic-div"));
+	launchPicDiv.style.top = String(parseInt(launchStyles.top) + 
+		parseInt(launchStyles.height) / 2 - 37.5) + "px";
+	launchPicDiv.style.left = String(parseInt(launchStyles.left) + 
+		parseInt(launchStyles.width) / 2 - 37.5) + "px";
+	launchPicDiv.style.transform = "rotate(" + (-1) * initialAngle 
+		+ "deg)";
+
+
+	var launchPic = launchPicDiv.appendChild(elMaker("object", "launch-pic"));
+	launchPic.type = "image/svg+xml";
+	launchPic.data = "assets/launcher.svg";
+	console.log(launchPicDiv)
+	console.log(launchPic.style);
+
+	// Register event listeners
 	launchAngle.addEventListener("input", function() {
-		launcher.launchAngle = launchAngle.value / 360 * (2 * Math.PI);
+		launcher.launchAngle = launchAngle.value / 
+			360 * (2 * Math.PI);;
+		launchPicDiv.style.transform = "rotate(" + (-1) * launchAngle.value + 
+			"deg)";
 		}, false);
 	fireButton.addEventListener("click", function() {
 		launcher.fire(level);
@@ -616,20 +651,24 @@ function launchControl (level, frameFunc) {
 	// Initialize Intro Screen
 	if (level.status == "new") {
 		level.status = "paused";
-		messageBoard.innerHTML = "<p id=\"message-text\">Welcome to " + levelData.name + ", Commander. " +
-			"Destroy the Cosmic Dampener to reveal the secret clue left here " +
-			"by the Ancients.</p>" + 
+		messageBoard.innerHTML = "<p id=\"message-text\">Welcome to " + 
+			levelData.name + ", Commander. " + "Destroy the Cosmic Dampener to \
+			reveal the hidden clue left here " + "by the Ancients. Collect these \
+			clues to unlock the Galaxy's most guarded secret.</p>" + 
 			"<button type=\"button\" id=\"start-button\">Continue</button>";
 	}
 
+	// Grab new elements from messageBoard
 	var startButton = document.getElementById("start-button");
 	var messageText = document.getElementById("message-text");
+
+	// Register messageBoard event listeners
 	startButton.addEventListener("click", function () {
 		level.pauseToggler(level, frameFunc);
 		messageBoard.className = "messenger-hidden";
 	}, false);
 
-	// Add necessary properties to control object
+	// Add properties to control object for passing to other functions
 	controlObj.messageBoard = messageBoard;
 	controlObj.messageText = messageText;
 	controlObj.startButton = startButton;
@@ -637,8 +676,7 @@ function launchControl (level, frameFunc) {
 	return controlObj;
 }
 
-// Move Actors
-
+// Run the game
 function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(status) {
