@@ -13,6 +13,14 @@ body {
 
 .background td { padding: 0;                     }
 
+.controls {
+  opacity: 100;
+}
+
+.controls-hidden {
+  opacity: 0;
+}
+
 .game {
   overflow: hidden;
   /*max-width: 600px;
@@ -59,6 +67,15 @@ body {
 	padding: 10px 20px;
   font-family: monospace;
   font-size: 3em;
+}
+
+.messenger-final {
+  position: absolute;
+  background-color: black;
+  padding: 10px 20px;
+  font-family: monospace;
+  font-size: 3em;
+
 }
 
 .messenger-hidden {

@@ -27,13 +27,17 @@ var levelPlans = [
 	{
 		name: "Earth", 
 		G: 9.81,
-		message: 
+		messages: [
+			"I hope you wrote that down,\n\
+			Playa.",
+
 			"This thing all things devours:\n\
 			Birds, beasts, trees, flowers;\n\
 			Gnaws iron, bites steel;\n\
 			Grinds hard stones to meal;\n\
 			Slays king, ruins town,\n\
-			And beats high mountain down."
+			And beats high mountain down.",
+		]
 	}
 ]
 ];
@@ -128,6 +132,7 @@ Launcher.prototype.fire = function(level) {
 		console.log("fire");
 		this.ammo--;
 	} else {
+		level.status = "pauseLoss";
 		console.log("You're out of ammo, sir.");
 		// also change status b/c game over (or buy ammo ha ha)
 	}
@@ -179,7 +184,6 @@ Projectile.prototype.act = function(deltaT, level) {
 	var testHeight = level.staticGrid.length;
 
 	// Wrap around behavior
-
 	if(0 <= testPos.x && testPos.x <= testLength && 0 <= testPos.y &&
 		testPos.y <= testHeight) { this.newPos = testPos; }
 
@@ -248,7 +252,7 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 
 	if(this.power <= 0 && this.hit) {
 		window.clearTimeout(level.timeouts.impact1);
-		level.status = "pausedWin";
+		level.status = "paused";
 		controlObj.messageText.textContent = "You've done it, Commander!"
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false;
@@ -475,15 +479,27 @@ Level.prototype.interactWith = function(obj1, obj2) {
 	if (obj2.yBlock) obj2.obj.interact.y(obj1, obj2.obj);
 };
 
-Level.prototype.pauseToggler = function (level, frameFunc) {
-	if (level.status == "paused") {
+Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
+	if (level.status == "paused" &&
+			level.activeGrid[1].power <= 0) {
+		level.status = "pauseWin";
+		messageBoard.className = "messenger-hidden";
+		runAnimation(frameFunc);
+	} else if (level.status == "paused") {
 		level.status = null;
+		messageBoard.className = "messenger-hidden";
 		runAnimation(frameFunc);
 	} else if (level.status == null) {
 			level.status = "paused";
-	} else if (level.status == "pausedWin") {
-			level.status = "won";
-			runAnimation(frameFunc);
+	} else if (level.status == "pauseWin") {
+			if (levelData.messages.length) level.status = "pauseWin";
+				else level.status = "won";
+			messageBoard.className = "messenger-hidden";
+			level.finalSequence();
+	} else if (level.status == "pauseLoss") {
+			level.status = "lost";
+			messageBoard.className = "messenger-hidden";
+			level.finalSequence();
 	}
 }
 
@@ -491,8 +507,7 @@ Level.prototype.timeouts = {};
 
 Level.prototype.isFinished = function() {
 	// console.log(this.status);
-  return this.status != null && this.status != "pausedWin" && 
-  	this.finishDelay < 0;
+  return this.status != null && this.finishDelay < 0;
 };
 
 /******************/
@@ -623,11 +638,14 @@ function launchControl (level, frameFunc) {
 	var fireButton = document.getElementById("fire-button");
 	var initialAngle = launcher.launchAngle / (2 * Math.PI) * 360;
 	var launchAngle = document.getElementById("launch-angle");
+	var launchControls = document.getElementById("control-div");
 	var launchDiv = document.getElementsByClassName("launcher");
 	var launchPower = document.getElementById("launch-power");
 	var messageBoard = document.getElementById("message-board");
+	var messages = levelData.messages;
 	var pauseButton = document.getElementById("pause-button");
 	
+	launchControls.className = "controls";
 
 	// Insert Launcher graphics
 	var launchStyles = {
@@ -668,10 +686,11 @@ function launchControl (level, frameFunc) {
 		launcher.fire(level);
 		}, false);
 	pauseButton.addEventListener("click", function () {
+		var messageNum = levelData.messages.length;
 		level.pauseToggler(level, frameFunc);
 	}, false);
 
-	// Initialize Intro Screen
+	// Initialize message board
 	if (level.status == "new") {
 		level.status = "paused";
 		messageBoard.innerHTML = "<p id=\"message-text\">Welcome to " + 
@@ -687,28 +706,55 @@ function launchControl (level, frameFunc) {
 
 	// Register messageBoard event listeners
 	startButton.addEventListener("click", function () {
-		level.pauseToggler(level, frameFunc);
-		messageBoard.className = "messenger-hidden";
+		level.pauseToggler(level, frameFunc, messageBoard);
 	}, false);
 
 	// Add properties to control object for passing to other functions
+	controlObj.launchControls = launchControls;
 	controlObj.messageBoard = messageBoard;
 	controlObj.messageText = messageText;
 	controlObj.startButton = startButton;
+	controlObj.messages = messages;
 
 	return controlObj;
+}
+
+// Message Handlers
+function messageBoy(level, controller) {
+	if (level.status == "pauseWin") {
+		var lastMessage = levelData.messages.pop();
+		controller.messageText.innerText = lastMessage;
+		controller.messageBoard.className = "messenger-final";
+	}
+
+	if (level.status == "pauseLoss") {
+		var randomIndex = Math.floor(Math.random() * trashTalk.length);
+		var epicSlam = trashTalk[randomIndex];
+		console.log(epicSlam);
+		trashTalk.splice(randomIndex, 1);
+		controller.messageText.innerText = epicSlam;
+		controller.messageBoard.className = "messenger-final";
+	}
 }
 
 // Run the game
 function runGame(plans, Display) {
 	function startLevel(n) {
-		runLevel(new Level(plans[n]), Display, function(status) {
-			if (status == "lost")
-				startLevel(n);
-			else if (n < plans.length - 1)
-        startLevel(n + 1);
-      else
-        console.log("You win!");
+		runLevel(new Level(plans[n]), Display, function(level, controller) {
+			level.finalSequence = function() {
+				if(level.status == "pauseWin" || level.status == "pauseLoss") {
+					messageBoy(level, controller);
+				} else if (level.status == "lost") {
+					startLevel(n);
+				} else if (level.status == "won" && n < plans.length - 1) {
+					startLevel(n + 1); 
+				} else if (level.status == "won") {
+					// game winning sequence;
+					console.log("You win!");
+				}
+			}
+
+			level.finalSequence();
 		});
 	}
 	document.addEventListener("DOMContentLoaded", function() {
@@ -721,20 +767,23 @@ function runLevel(level, Display, andThen) {
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
 	var display = new Display(targetNode, level);
-	// var messageBoard = document.getElementById("message-board");
 	// Initialize controller
 	var controller = launchControl(level, frameFunc);
 	function frameFunc (step) {
-		if (level.status == "paused" || level.status == "pausedWin") {
+		// Don't animate if paused
+		if (level.status == "paused") {
 			return false;
 		}
 
 		level.animate(step, controller);
 		display.drawFrame(step);
+
+		// Final sequence
 		if (level.isFinished()) {
 			display.clear();
+			controller.launchControls.className = "controls-hidden";
 			if (andThen)
-				andThen(level.status);
+				andThen(level, controller);
 			return false;
 		}
 	}
@@ -756,6 +805,15 @@ function runAnimation(frameFunc) {
 	}
 	requestAnimationFrame(frame);
 }
+
+var trashTalk = [
+	"Perhaps your calculations were a tad off, Commander.",
+	"Might I suggest using the targeting computer next time?",
+	"I shall be happy to serve as a character witness\n\
+	at your court martial, Commander.",
+	"The Galaxy's secrets have escaped us once again!",
+	"Noooooooooooooooooooooo!"
+]
 
 /**************/
 /* Some Tests */
