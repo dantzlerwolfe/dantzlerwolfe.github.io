@@ -37,7 +37,8 @@ var levelPlans = [
 			Grinds hard stones to meal;\n\
 			Slays king, ruins town,\n\
 			And beats high mountain down.",
-		]
+		],
+		soundTrack: new Audio('assets/forest-night.wav')
 	}
 ]
 ];
@@ -97,11 +98,13 @@ function HardWall() {}
 
 HardWall.prototype.type = "HardWall";
 HardWall.prototype.interact = {
-	x: function(obj) {
-			obj.velocity.x *= -1;
+	x: function(obj1) {
+			obj1.velocity.x *= -1;
+			obj1.power -= 1;
 		},
-	y: function(obj) { 
-			obj.velocity.y *= -1;
+	y: function(obj1) { 
+			obj1.velocity.y *= -1;
+			obj1.power -= 1;
 		},
 };
 HardWall.prototype.size = new Vector(1,1);
@@ -114,11 +117,13 @@ function Launcher(pos) {
 	this.timeApplied = 2;
 	this.ammo = 5;
 	this.initialForce = this.forceMultiple * 9.81;
+	this.soundEffect = assignSound('assets/simple-launch.wav', 1);
 }
 
 // Takes the activeGrid as its parameter
-Launcher.prototype.fire = function(level) {
+Launcher.prototype.fire = function(level, controlObj) {
 	if (this.ammo > 0) {
+		console.log(controlObj);
 		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
 		var newRound = new Projectile(origin);
 		// var newRound = new Projectile(this.pos.plus(new Vector(.4, .2)));
@@ -127,10 +132,14 @@ Launcher.prototype.fire = function(level) {
 				this.timeApplied, newRound.mass);
 		// velocity.x = Number(velocity.x.toFixed(4));
 		newRound.velocity = velocity;
-		level.activeGrid.push(newRound);
 		newRound.ghostChange(newRound);
+		console.log(this.soundEffect);
+		this.soundEffect.play();
+		level.activeGrid.push(newRound);
 		console.log("fire");
 		this.ammo--;
+		console.log(controlObj.ammoCount.textContent);
+		controlObj.ammoCount.textContent = this.ammo;
 	} else {
 		level.status = "pauseLoss";
 		console.log("You're out of ammo, sir.");
@@ -144,19 +153,22 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 };
 
 Launcher.prototype.interact = {
-	x: function(obj) {
+	x: function(obj1) {
 			if(!obj.ghost) 
-			obj.velocity.x *= -1;
+			obj1.velocity.x *= -1;
+			obj1.power -= 1;
 		},
-	y: function(obj) {
+	y: function(obj1) {
 			if(!obj.ghost) 
-			obj.velocity.y *= -1;
+			obj1.velocity.y *= -1;
+			obj1.power -= 1;
 		},
 };
 
 function Projectile(pos) {
 	this.mass = 9.81; // in kilograms	
 	this.pos = pos
+	this.power = 3
 	this.size = new Vector(0.5,0.5);
 	this.t0 = new Date().getTime();
 	this.velocity = new Vector(0,0);
@@ -165,15 +177,12 @@ function Projectile(pos) {
 
 Projectile.prototype.type = "projectile";
 
-// Position under constant acceleration. Thanks, Isaac.
-// t0 = time when projectile is fired.
 Projectile.prototype.move = move;
-
 
 Projectile.prototype.ghostChange = function(obj) {
 		window.setTimeout(function() {
 			obj.ghost = false;
-		}, 100);
+		}, 500);
 };
 
 Projectile.prototype.act = function(deltaT, level) {
@@ -182,6 +191,12 @@ Projectile.prototype.act = function(deltaT, level) {
 	var testPos = newStats["newPos"];
 	var testLength = level.staticGrid[0].length;
 	var testHeight = level.staticGrid.length;
+	var initialPower = this.power;
+
+	// Destroy projectiles that are out of power
+	if (this.power <=0 ) {
+		Remove(level.activeGrid, this);
+	}
 
 	// Wrap around behavior
 	if(0 <= testPos.x && testPos.x <= testLength && 0 <= testPos.y &&
@@ -195,9 +210,14 @@ Projectile.prototype.act = function(deltaT, level) {
 	if(this.newPos.y > 0) {
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	}
-	console.log(this.ghost);
+	// console.log(this.ghost);
+	console.log("before " + this.power);
+	console.log(this.size);
 	if (obstacle && !this.ghost) {
 		level.interactWith(this, obstacle);
+		this.size = this.size.scale(this.power / initialPower);
+		console.log("after " + this.power);
+		console.log(this.size);
 		// console.log(level.activeGrid.indexOf(this) + " O - " + 
 		// 	this.velocity.x + ", " + this.velocity.y);
 		// console.log(level.activeGrid.indexOf(this) + " O - " + 
@@ -217,13 +237,15 @@ Projectile.prototype.act = function(deltaT, level) {
 };
 
 Projectile.prototype.interact = {
-	x: function(obj) {
+	x: function(obj1) {
 			if(!obj.ghost) 
-			obj.velocity.x *= -1;
+			obj1.velocity.x *= -1;
+			obj1.power -= 1;
 		},
-	y: function(obj) {
+	y: function(obj1) {
 			if(!obj.ghost) 
-			obj.velocity.y *= -1;
+			obj1.velocity.y *= -1;
+			obj1.power -= 1;
 		},
 };
 
@@ -232,6 +254,7 @@ function Target (pos) {
 	this.power = 2;
 	this.size = new Vector(1, 1);
 	this.hit = false;
+	this.soundEffect = assignSound('assets/usat-bomb.wav', 1);
 }
 
 Target.prototype.type = "target";
@@ -265,12 +288,14 @@ Target.prototype.interact = {
 		console.log(obj2);
 		obj1.velocity.x *= -0.5;
 		obj2.power -= 1;
+		obj1.power -= 1;
 		obj2.hit = true;
 	},
 	y: function (obj1, obj2) {
 		console.log("y " + obj2);
 		obj1.velocity.y *= -0.5;
 		obj2.power -= 1;
+		obj1.power -= 1;
 		obj2.hit = true;
 	}
 };
@@ -570,9 +595,21 @@ DOMDisplay.prototype.clear = function() {
   this.wrap.parentNode.removeChild(this.wrap);
 };
 
-/********************/
-/* Math and Physics */
-/********************/
+/*************/
+/* Utilities */
+/*************/
+
+// Sound utilities
+function assignSound (url, vol) { 
+		var track = new Audio(url);
+		track.volume = vol;
+		return track;
+	}
+
+// Remove an array element
+function Remove (array, element) {
+	array.splice(array.indexOf(element), 1);
+}
 
 // Trusty vector object
 function Vector(x, y) {
@@ -587,6 +624,12 @@ Vector.prototype.plus = function(vector) {
 Vector.prototype.scale = function(scalar) {
 	return new Vector(this.x * scalar, this.y * scalar);
 };
+
+
+
+/****************/
+/* Basic Motion */
+/****************/
 
 // Calculate Launch Velocity Using Simple Impulse Equations
 // launchAngle in radians, launchForce in newtons, timeApplied
@@ -603,7 +646,6 @@ function impulse(launchAngle, launchForce, timeApplied, projMass) {
 }
 
 // Position under constant acceleration. Thanks, Isaac.
-// t0 = time when projectile is fired.
 function move(deltaT) {
 	var newX = this.pos.x + this.velocity.x * deltaT;
 	// newX = Number(newX.toFixed(4));
@@ -616,13 +658,6 @@ function move(deltaT) {
 	return { "newPos": newPos, "newYVelocity": newYVelocity };
 };
 
-
-/*****************/
-/* Message Board */
-/*****************/
-
-
-
 /****************/
 /* Run the Game */
 /****************/
@@ -632,7 +667,7 @@ function launchControl (level, frameFunc) {
 
 	// Grab elements
 	var launcher = level.activeGrid[0];
-
+	var ammoCount = document.getElementById("ammo-count");
 	var activeDiv = document.getElementsByClassName("active");
 	var controlObj = Object.create(null);
 	var fireButton = document.getElementById("fire-button");
@@ -646,6 +681,7 @@ function launchControl (level, frameFunc) {
 	var pauseButton = document.getElementById("pause-button");
 	
 	launchControls.className = "controls";
+	console.log(ammoCount);
 
 	// Insert Launcher graphics
 	var launchStyles = {
@@ -683,7 +719,7 @@ function launchControl (level, frameFunc) {
 	}, false);
 	fireButton.addEventListener("click", function() {
 		console.log(launcher);
-		launcher.fire(level);
+		launcher.fire(level, controlObj);
 		}, false);
 	pauseButton.addEventListener("click", function () {
 		var messageNum = levelData.messages.length;
@@ -695,7 +731,7 @@ function launchControl (level, frameFunc) {
 		level.status = "paused";
 		messageBoard.innerHTML = "<p id=\"message-text\">Welcome to " + 
 			levelData.name + ", Commander. " + "Destroy the Cosmic Dampener to \
-			reveal the hidden clue left here " + "by the Ancients. Collect these \
+			reveal the hidden clues left here " + "by the Ancients. Collect these \
 			clues to unlock the Galaxy's most guarded secret.</p>" + 
 			"<button type=\"button\" id=\"start-button\">Continue</button>";
 	}
@@ -711,6 +747,7 @@ function launchControl (level, frameFunc) {
 
 	// Add properties to control object for passing to other functions
 	controlObj.launchControls = launchControls;
+	controlObj.ammoCount = ammoCount; 
 	controlObj.messageBoard = messageBoard;
 	controlObj.messageText = messageText;
 	controlObj.startButton = startButton;
@@ -753,7 +790,6 @@ function runGame(plans, Display) {
 					console.log("You win!");
 				}
 			}
-
 			level.finalSequence();
 		});
 	}
@@ -767,6 +803,11 @@ function runLevel(level, Display, andThen) {
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
 	var display = new Display(targetNode, level);
+	// Initialize music
+	var soundTrack = levelData.soundTrack;
+	soundTrack.loop = true;
+	soundTrack.play();
+	soundTrack.volume = 1;
 	// Initialize controller
 	var controller = launchControl(level, frameFunc);
 	function frameFunc (step) {
