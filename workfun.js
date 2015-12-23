@@ -122,6 +122,7 @@ function Launcher(pos) {
 
 // Takes the activeGrid as its parameter
 Launcher.prototype.fire = function(level, controlObj) {
+	if (level.status == "paused") return null;
 	if (this.ammo > 0) {
 		console.log(controlObj);
 		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
@@ -154,12 +155,12 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 
 Launcher.prototype.interact = {
 	x: function(obj1) {
-			if(!obj.ghost) 
+			if(!obj1.ghost) 
 			obj1.velocity.x *= -1;
 			obj1.power -= 1;
 		},
 	y: function(obj1) {
-			if(!obj.ghost) 
+			if(!obj1.ghost) 
 			obj1.velocity.y *= -1;
 			obj1.power -= 1;
 		},
@@ -182,7 +183,7 @@ Projectile.prototype.move = move;
 Projectile.prototype.ghostChange = function(obj) {
 		window.setTimeout(function() {
 			obj.ghost = false;
-		}, 500);
+		}, 200);
 };
 
 Projectile.prototype.act = function(deltaT, level) {
@@ -199,7 +200,7 @@ Projectile.prototype.act = function(deltaT, level) {
 	}
 
 	// Wrap around behavior
-	if(0 <= testPos.x && testPos.x <= testLength && 0 <= testPos.y &&
+	if(0 <= testPos.x && testPos.x <= testLength && 
 		testPos.y <= testHeight) { this.newPos = testPos; }
 
 	if(this.velocity.x < 0 && testPos.x < 0) { this.newPos.x = testLength; }
@@ -511,11 +512,12 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 		messageBoard.className = "messenger-hidden";
 		runAnimation(frameFunc);
 	} else if (level.status == "paused") {
+		if(messageBoard) messageBoard.className = "messenger-hidden";
 		level.status = null;
-		messageBoard.className = "messenger-hidden";
 		runAnimation(frameFunc);
 	} else if (level.status == null) {
 			level.status = "paused";
+			// levelData.soundTrack.pause();
 	} else if (level.status == "pauseWin") {
 			if (levelData.messages.length) level.status = "pauseWin";
 				else level.status = "won";
