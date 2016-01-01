@@ -10,3 +10,7 @@ I started this project to help me understand chapter 15 of [Marijn Haverbeke's E
 Other code I've either left intact or lightly modified to handle Domtastic's unique functionality.
 
 If you see something you dislike, please feel free to comment and/or suggest modifications. But just remember one thing: I'm a lawyer, not an engineer (yet).
+
+##Styling##
+
+I used bootstrap's online customization form. [Here's the configuration gist.](https://gist.github.com/67d862f7aaa14bc02a89). [Click here for further customization](http://getbootstrap.com/customize/?id=67d862f7aaa14bc02a89).

@@ -117,7 +117,8 @@ function Launcher(pos) {
 	this.timeApplied = 2;
 	this.ammo = 5;
 	this.initialForce = this.forceMultiple * 9.81;
-	this.soundEffect = assignSound('assets/simple-launch.wav', 1);
+	this.power = 3;
+	this.hit = false;
 }
 
 // Takes the activeGrid as its parameter
@@ -134,35 +135,56 @@ Launcher.prototype.fire = function(level, controlObj) {
 		// velocity.x = Number(velocity.x.toFixed(4));
 		newRound.velocity = velocity;
 		newRound.ghostChange(newRound);
-		console.log(this.soundEffect);
-		this.soundEffect.play();
+		level.effects.launchEffect.play();
 		level.activeGrid.push(newRound);
-		console.log("fire");
 		this.ammo--;
-		console.log(controlObj.ammoCount.textContent);
 		controlObj.ammoCount.textContent = this.ammo;
 	} else {
-		level.status = "pauseLoss";
-		console.log("You're out of ammo, sir.");
-		// also change status b/c game over (or buy ammo ha ha)
+			controlObj.messageText.textContent = "We're out of ammo, sir."
+			controlObj.messageBoard.className = "messenger";
+			level.timeouts.impact1 = window.setTimeout(function() {
+			controlObj.messageBoard.className = "messenger-hidden";
+		}, 1000);
+			// This is where we'd ask user to buy ammo ;)
 	}
 };	
 
 Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function(deltaT, level, controlObj) {
-	// console.log(this.launchAngle);
+	if(this.power > 0 && this.hit) {
+		level.effects.damageEffect.play();
+		controlObj.messageText.textContent = "You've hit us, Sir!"
+		controlObj.messageBoard.className = "messenger";
+		this.hit = false; 
+		level.timeouts.impact1 = window.setTimeout(function() {
+			controlObj.messageBoard.className = "messenger-hidden";
+		}, 1000);	
+	}
+
+	if(this.power <= 0 && this.hit) {
+		level.effects.destroyEffect.play();
+		window.clearTimeout(level.timeouts.impact1);
+		level.status = "pauseLoss";
+		controlObj.messageText.textContent = "You've destroyed us, Sir!"
+		controlObj.messageBoard.className = "messenger";
+		this.hit = false;
+	}
 };
 
 Launcher.prototype.interact = {
-	x: function(obj1) {
+	x: function(obj1, obj2) {
 			if(!obj1.ghost) 
 			obj1.velocity.x *= -1;
 			obj1.power -= 1;
+			obj2.power -= 1;
+			obj2.hit = true;
 		},
-	y: function(obj1) {
+	y: function(obj1, obj2) {
 			if(!obj1.ghost) 
 			obj1.velocity.y *= -1;
 			obj1.power -= 1;
+			obj2.power -=1;
+			obj2.hit = true;
 		},
 };
 
@@ -174,6 +196,7 @@ function Projectile(pos) {
 	this.t0 = new Date().getTime();
 	this.velocity = new Vector(0,0);
 	this.ghost = true;
+	this.bounceEffect = assignSound('assets/bounce.wav', 1);
 }
 
 Projectile.prototype.type = "projectile";
@@ -197,6 +220,7 @@ Projectile.prototype.act = function(deltaT, level) {
 	// Destroy projectiles that are out of power
 	if (this.power <=0 ) {
 		Remove(level.activeGrid, this);
+		level.effects.poofEffect.play();
 	}
 
 	// Wrap around behavior
@@ -212,13 +236,16 @@ Projectile.prototype.act = function(deltaT, level) {
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	}
 	// console.log(this.ghost);
-	console.log("before " + this.power);
-	console.log(this.size);
+	// console.log("before " + this.power);
+	// console.log(this.size);
 	if (obstacle && !this.ghost) {
+		
 		level.interactWith(this, obstacle);
-		this.size = this.size.scale(this.power / initialPower);
-		console.log("after " + this.power);
-		console.log(this.size);
+		this.bounceEffect.play();
+		this.size = this.size.scale(Math.max(this.power / initialPower, 0));
+		this.bounceEffect.volume *= Math.max(this.power / initialPower, 0);
+		// console.log("after " + this.power);
+		// console.log(this.size);
 		// console.log(level.activeGrid.indexOf(this) + " O - " + 
 		// 	this.velocity.x + ", " + this.velocity.y);
 		// console.log(level.activeGrid.indexOf(this) + " O - " + 
@@ -239,14 +266,18 @@ Projectile.prototype.act = function(deltaT, level) {
 
 Projectile.prototype.interact = {
 	x: function(obj1) {
-			if(!obj.ghost) 
-			obj1.velocity.x *= -1;
-			obj1.power -= 1;
+		  console.log("xBlock")
+			if(!obj1.ghost) {
+				obj1.velocity.x *= -1;
+				obj1.power -= 1;
+			}
 		},
 	y: function(obj1) {
-			if(!obj.ghost) 
-			obj1.velocity.y *= -1;
-			obj1.power -= 1;
+			console.log("yBlock")
+			if(!obj1.ghost) { 
+				obj1.velocity.y *= -1;
+				obj1.power -= 1;
+			}
 		},
 };
 
@@ -255,26 +286,24 @@ function Target (pos) {
 	this.power = 2;
 	this.size = new Vector(1, 1);
 	this.hit = false;
-	this.soundEffect = assignSound('assets/usat-bomb.wav', 1);
 }
 
 Target.prototype.type = "target";
 
 
 Target.prototype.act = function(deltaT, level, controlObj) {
-	if(this.power == 1 && this.hit) {
-		console.log(controlObj.messageText);
-		console.log("satisfies first condition");
+	if(this.power > 0 && this.hit) {
+		level.effects.damageEffect.play();
 		controlObj.messageText.textContent = "Direct hit!"
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
 		level.timeouts.impact1 = window.setTimeout(function() {
-			// console.log("timeOut executed");
 			controlObj.messageBoard.className = "messenger-hidden";
 		}, 1000);	
 	}
 
 	if(this.power <= 0 && this.hit) {
+		level.effects.destroyEffect.play();
 		window.clearTimeout(level.timeouts.impact1);
 		level.status = "paused";
 		controlObj.messageText.textContent = "You've done it, Commander!"
@@ -338,6 +367,14 @@ function Level (plan) {
 	this.finishDelay = null;
 	this.status = "new";
 
+}
+
+// Define sound library for Level.
+Level.prototype.effects = {
+	damageEffect: assignSound('assets/small-explosion.wav', 1),
+	destroyEffect: assignSound('assets/big-explosion.wav', 1),
+	launchEffect: assignSound('assets/simple-launch.wav', 1),
+	poofEffect: assignSound('assets/poof.wav', 1)
 }
 
 // Identify static obstacles that cause an interaction prior to impact.
@@ -424,14 +461,14 @@ Level.prototype.aObstacleAt = function (actor) {
 		yBlock: null
 	};
 
-	// xStart = Math.floor(actor.newPos.x);
-	// yStart = Math.floor(actor.newPos.y);
-	// xEnd = Math.ceil(actor.newPos.x + actor.size.x);
-	// yEnd = Math.ceil(actor.newPos.y + actor.size.y);
-	xStart = actor.newPos.x;
-	yStart = actor.newPos.y;
-	xEnd = actor.newPos.x + actor.size.x;
-	yEnd = actor.newPos.y + actor.size.y;
+	xStart = Math.floor(actor.newPos.x);
+	yStart = Math.floor(actor.newPos.y);
+	xEnd = Math.ceil(actor.newPos.x + actor.size.x);
+	yEnd = Math.ceil(actor.newPos.y + actor.size.y);
+	// xStart = actor.newPos.x;
+	// yStart = actor.newPos.y;
+	// xEnd = actor.newPos.x + actor.size.x;
+	// yEnd = actor.newPos.y + actor.size.y;
 
 	// Check for active obstacles.
 	for (var i = 0, j = this.activeGrid.length; i < j; i++) {
@@ -514,10 +551,11 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 	} else if (level.status == "paused") {
 		if(messageBoard) messageBoard.className = "messenger-hidden";
 		level.status = null;
+		levelData.soundTrack.play();
 		runAnimation(frameFunc);
 	} else if (level.status == null) {
 			level.status = "paused";
-			// levelData.soundTrack.pause();
+			levelData.soundTrack.pause();
 	} else if (level.status == "pauseWin") {
 			if (levelData.messages.length) level.status = "pauseWin";
 				else level.status = "won";
@@ -684,6 +722,7 @@ function launchControl (level, frameFunc) {
 	
 	launchControls.className = "controls";
 	console.log(ammoCount);
+	console.log(messageBoard);
 
 	// Insert Launcher graphics
 	var launchStyles = {
@@ -735,7 +774,8 @@ function launchControl (level, frameFunc) {
 			levelData.name + ", Commander. " + "Destroy the Cosmic Dampener to \
 			reveal the hidden clues left here " + "by the Ancients. Collect these \
 			clues to unlock the Galaxy's most guarded secret.</p>" + 
-			"<button type=\"button\" id=\"start-button\">Continue</button>";
+			"<button type=\"button\" id=\"start-button\" class=\"btn btn-default" +
+			" btn-lg\">Continue</button>";
 	}
 
 	// Grab new elements from messageBoard

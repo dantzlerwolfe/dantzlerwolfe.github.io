@@ -16,10 +16,25 @@ body {
 
 .controls {
   opacity: 100;
+  font-size: 1.5em;
+  text-align: center;
 }
 
 .controls-hidden {
   opacity: 0;
+}
+
+.data {
+  color: white;
+}
+
+fieldset legend {
+  text-transform: uppercase;
+}
+
+#fire-group {
+  padding-left: 0;
+  text-align: left;
 }
 
 .game {
@@ -67,7 +82,7 @@ body {
 	max-width: 50%;
 	padding: 10px 20px;
   font-family: monospace;
-  font-size: 3em;
+  font-size: 2.25em;
 }
 
 .messenger-final {
