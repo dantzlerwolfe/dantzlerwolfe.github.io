@@ -46,6 +46,18 @@ fieldset legend {
 .HardWall { background: #A52A2A; }
 .SoftWall { background: yellow; }
 
+.hit-final {
+  background-image: url("assets/explosion3.gif");
+  background-position: center;
+  background-size: contain;
+}
+
+.hit-normal {
+  background-image: url("assets/explosion.gif");
+  background-position: center;
+  background-size: contain;
+}
+
 .projectile		 { 
 	position: absolute;
 	background: blue; }
@@ -71,7 +83,13 @@ fieldset legend {
 .target				 { 
 	position: absolute;	
 	background: white;
-						 
+}
+
+.target-pic-div {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  z-index: 99;
 }
 
 .messenger {

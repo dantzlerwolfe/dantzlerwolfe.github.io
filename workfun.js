@@ -38,7 +38,7 @@ var levelPlans = [
 			Slays king, ruins town,\n\
 			And beats high mountain down.",
 		],
-		soundTrack: new Audio('assets/forest-night.wav')
+		soundTrack: assignSound('assets/forest-night.wav', 1),
 	}
 ]
 ];
@@ -155,6 +155,10 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 		level.effects.damageEffect.play();
 		controlObj.messageText.textContent = "You've hit us, Sir!"
 		controlObj.messageBoard.className = "messenger";
+		controlObj.launchPicDiv.className = "launch-pic-div hit-normal";
+		level.timeouts.explosionL = window.setTimeout(function() {
+			controlObj.launchPicDiv.className = "launch-pic-div";
+		}, 1000);	
 		this.hit = false; 
 		level.timeouts.impact1 = window.setTimeout(function() {
 			controlObj.messageBoard.className = "messenger-hidden";
@@ -163,7 +167,11 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 
 	if(this.power <= 0 && this.hit) {
 		level.effects.destroyEffect.play();
-		window.clearTimeout(level.timeouts.impact1);
+		// window.clearTimeout(level.timeouts.impact1);
+		controlObj.launchPicDiv.className = "launch-pic-div hit-final";
+		level.timeouts.explosionL = window.setTimeout(function() {
+			controlObj.launchPicDiv.className = "launch-pic-div";
+		}, 3200);	
 		level.status = "pauseLoss";
 		controlObj.messageText.textContent = "You've destroyed us, Sir!"
 		controlObj.messageBoard.className = "messenger";
@@ -294,6 +302,10 @@ Target.prototype.type = "target";
 Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power > 0 && this.hit) {
 		level.effects.damageEffect.play();
+		controlObj.targetPicDiv.className = "target-pic-div hit-normal";
+		level.timeouts.explosion = window.setTimeout(function() {
+			controlObj.targetPicDiv.className = "target-pic-div";
+		}, 1000);	
 		controlObj.messageText.textContent = "Direct hit!"
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
@@ -305,6 +317,10 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power <= 0 && this.hit) {
 		level.effects.destroyEffect.play();
 		window.clearTimeout(level.timeouts.impact1);
+		controlObj.targetPicDiv.className = "target-pic-div hit-final";
+		level.timeouts.explosion = window.setTimeout(function() {
+			controlObj.targetPicDiv.className = "target-pic-div";
+		}, 3200);	
 		level.status = "paused";
 		controlObj.messageText.textContent = "You've done it, Commander!"
 		controlObj.messageBoard.className = "messenger";
@@ -719,6 +735,7 @@ function launchControl (level, frameFunc) {
 	var messageBoard = document.getElementById("message-board");
 	var messages = levelData.messages;
 	var pauseButton = document.getElementById("pause-button");
+	var targetDiv = document.getElementsByClassName("target");
 	
 	launchControls.className = "controls";
 	console.log(ammoCount);
@@ -731,8 +748,9 @@ function launchControl (level, frameFunc) {
 		width: launchDiv[0].style.width,
 		height: launchDiv[0].style.height,
 	};
+
 	var launchPicDiv = 
-		activeDiv[0].parentNode.appendChild(elMaker("object", "launch-pic-div"));
+		activeDiv[0].parentNode.appendChild(elMaker("div", "launch-pic-div"));
 	launchPicDiv.style.top = String(parseInt(launchStyles.top) + 
 		parseInt(launchStyles.height) / 2 - 37.5) + "px";
 	launchPicDiv.style.left = String(parseInt(launchStyles.left) + 
@@ -740,12 +758,29 @@ function launchControl (level, frameFunc) {
 	launchPicDiv.style.transform = "rotate(" + (-1) * initialAngle 
 		+ "deg)";
 
-
 	var launchPic = launchPicDiv.appendChild(elMaker("object", "launch-pic"));
 	launchPic.type = "image/svg+xml";
 	launchPic.data = "assets/launcher.svg";
 	console.log(launchPicDiv)
 	console.log(launchPic.style);
+
+	// Insert Target graphics
+	var targetStyles = {
+		top: targetDiv[0].style.top,
+		left: targetDiv[0].style.left,
+		width: targetDiv[0].style.width,
+		height: targetDiv[0].style.height,
+	}
+
+	var targetPicDiv = 
+		activeDiv[0].parentNode.appendChild(elMaker("div", "target-pic-div"));
+	targetPicDiv.style.top = String(parseInt(targetStyles.top) -
+		100 + parseInt(targetStyles.height)) + "px";
+	console.log("top - " + parseInt(targetStyles.top) + 
+		"\nheight - " + parseInt(targetStyles.height));
+	targetPicDiv.style.left = String(parseInt(targetStyles.left) +
+		parseInt(targetStyles.width) / 2 - 50) + "px";
+
 
 	// Register event listeners
 	launchAngle.addEventListener("input", function() {
@@ -778,7 +813,7 @@ function launchControl (level, frameFunc) {
 			" btn-lg\">Continue</button>";
 	}
 
-	// Grab new elements from messageBoard
+	// Grab new elements 
 	var startButton = document.getElementById("start-button");
 	var messageText = document.getElementById("message-text");
 
@@ -794,6 +829,8 @@ function launchControl (level, frameFunc) {
 	controlObj.messageText = messageText;
 	controlObj.startButton = startButton;
 	controlObj.messages = messages;
+	controlObj.targetPicDiv = targetPicDiv;
+	controlObj.launchPicDiv = launchPicDiv;
 
 	return controlObj;
 }
@@ -849,7 +886,6 @@ function runLevel(level, Display, andThen) {
 	var soundTrack = levelData.soundTrack;
 	soundTrack.loop = true;
 	soundTrack.play();
-	soundTrack.volume = 1;
 	// Initialize controller
 	var controller = launchControl(level, frameFunc);
 	function frameFunc (step) {
@@ -857,11 +893,10 @@ function runLevel(level, Display, andThen) {
 		if (level.status == "paused") {
 			return false;
 		}
-
+		// Draw the next frame
 		level.animate(step, controller);
 		display.drawFrame(step);
-
-		// Final sequence
+		// Initiate final sequence of the level
 		if (level.isFinished()) {
 			display.clear();
 			controller.launchControls.className = "controls-hidden";
