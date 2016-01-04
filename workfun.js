@@ -28,9 +28,6 @@ var levelPlans = [
 		name: "Earth", 
 		G: 9.81,
 		messages: [
-			"I hope you wrote that down,\n\
-			Playa.",
-
 			"This thing all things devours:\n\
 			Birds, beasts, trees, flowers;\n\
 			Gnaws iron, bites steel;\n\
@@ -169,12 +166,13 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 		level.effects.destroyEffect.play();
 		// window.clearTimeout(level.timeouts.impact1);
 		controlObj.launchPicDiv.className = "launch-pic-div hit-final";
+		controlObj.launchPicDiv.innerHTML = "";
+		level.activeGrid.splice(0, 1);
 		level.timeouts.explosionL = window.setTimeout(function() {
 			controlObj.launchPicDiv.className = "launch-pic-div";
 		}, 3200);	
-		level.status = "pauseLoss";
-		controlObj.messageText.textContent = "You've destroyed us, Sir!"
-		controlObj.messageBoard.className = "messenger";
+		// level.status = "pauseLoss";
+		level.status = "loss";
 		this.hit = false;
 	}
 };
@@ -298,7 +296,6 @@ function Target (pos) {
 
 Target.prototype.type = "target";
 
-
 Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power > 0 && this.hit) {
 		level.effects.damageEffect.play();
@@ -321,9 +318,11 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		level.timeouts.explosion = window.setTimeout(function() {
 			controlObj.targetPicDiv.className = "target-pic-div";
 		}, 3200);	
-		level.status = "paused";
-		controlObj.messageText.textContent = "You've done it, Commander!"
-		controlObj.messageBoard.className = "messenger";
+		level.status = "win"
+		level.activeGrid.splice(1, 1);
+		console.log(level.activeGrid);
+		// Set finishDelay to a positive number if needed.
+		level.finishDelay = 3;
 		this.hit = false;
 	}
 };
@@ -559,30 +558,45 @@ Level.prototype.interactWith = function(obj1, obj2) {
 };
 
 Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
-	if (level.status == "paused" &&
-			level.activeGrid[1].power <= 0) {
-		level.status = "pauseWin";
-		messageBoard.className = "messenger-hidden";
-		runAnimation(frameFunc);
+	if (level.status == null) {
+		level.status = "paused";
+		levelData.soundTrack.pause();
 	} else if (level.status == "paused") {
-		if(messageBoard) messageBoard.className = "messenger-hidden";
-		level.status = null;
-		levelData.soundTrack.play();
-		runAnimation(frameFunc);
-	} else if (level.status == null) {
-			level.status = "paused";
-			levelData.soundTrack.pause();
-	} else if (level.status == "pauseWin") {
-			if (levelData.messages.length) level.status = "pauseWin";
-				else level.status = "won";
-			messageBoard.className = "messenger-hidden";
+			if(messageBoard) messageBoard.className = "messenger-hidden";
+			level.status = null;
+			levelData.soundTrack.play();
+			runAnimation(frameFunc);
+	} else if (level.status == "win") {
 			level.finalSequence();
-	} else if (level.status == "pauseLoss") {
-			level.status = "lost";
-			messageBoard.className = "messenger-hidden";
+	} else if (level.status == "loss") {
 			level.finalSequence();
 	}
-}
+};
+
+// 	if (level.status == "paused" &&
+// 			level.activeGrid[1].power <= 0) {
+// 		level.status = "pauseWin";
+// 		messageBoard.className = "messenger-hidden";
+// 		runAnimation(frameFunc);
+// 	} else if (level.status == "paused") {
+// 		if(messageBoard) messageBoard.className = "messenger-hidden";
+// 		level.status = null;
+// 		levelData.soundTrack.play();
+// 		runAnimation(frameFunc);
+// 	} else if (level.status == null) {
+// 			level.status = "paused";
+// 			levelData.soundTrack.pause();
+// 	} else if (level.status == "pauseWin") {
+// 			if (levelData.messages.length) level.status = "pauseWin";
+// 				else level.status = "won";
+// 			messageBoard.className = "messenger-hidden";
+// 			level.finalSequence();
+// 	} else if (level.status == "pauseLoss") {
+// 			level.status = "lost";
+// 			messageBoard.className = "messenger-hidden";
+// 			level.finalSequence();
+// 	}
+// };
 
 Level.prototype.timeouts = {};
 
@@ -649,6 +663,7 @@ DOMDisplay.prototype.drawFrame = function() {
 
 DOMDisplay.prototype.clear = function() {
   this.wrap.parentNode.removeChild(this.wrap);
+  window.location.reload(false);
 };
 
 /*************/
@@ -836,38 +851,63 @@ function launchControl (level, frameFunc) {
 }
 
 // Message Handlers
-function messageBoy(level, controller) {
-	if (level.status == "pauseWin") {
-		var lastMessage = levelData.messages.pop();
-		controller.messageText.innerText = lastMessage;
-		controller.messageBoard.className = "messenger-final";
-	}
+// function messageBoy(level, controller) {
+// 	if (level.status == "pauseWin") {
+// 		var lastMessage = levelData.messages.pop();
+// 		controller.messageText.innerText = lastMessage;
+// 		controller.messageBoard.className = "messenger-final";
+// 	}
 
-	if (level.status == "pauseLoss") {
-		var randomIndex = Math.floor(Math.random() * trashTalk.length);
-		var epicSlam = trashTalk[randomIndex];
-		console.log(epicSlam);
-		trashTalk.splice(randomIndex, 1);
-		controller.messageText.innerText = epicSlam;
-		controller.messageBoard.className = "messenger-final";
-	}
-}
+// 	if (level.status == "pauseLoss") {
+// 		var randomIndex = Math.floor(Math.random() * trashTalk.length);
+// 		var epicSlam = trashTalk[randomIndex];
+// 		console.log(epicSlam);
+// 		trashTalk.splice(randomIndex, 1);
+// 		controller.messageText.innerText = epicSlam;
+// 		controller.messageBoard.className = "messenger-final";
+// 	}
+// }
 
 // Run the game
 function runGame(plans, Display) {
 	function startLevel(n) {
-		runLevel(new Level(plans[n]), Display, function(level, controller) {
+		runLevel(new Level(plans[n]), Display, function(level, controller, display) {
 			level.finalSequence = function() {
-				if(level.status == "pauseWin" || level.status == "pauseLoss") {
-					messageBoy(level, controller);
-				} else if (level.status == "lost") {
-					startLevel(n);
-				} else if (level.status == "won" && n < plans.length - 1) {
-					startLevel(n + 1); 
-				} else if (level.status == "won") {
-					// game winning sequence;
-					console.log("You win!");
+				if (level.status == "win" && congrats.length) {
+					var lastMessage = congrats.shift();
+					controller.messageText.innerText = lastMessage;
+					controller.messageBoard.className = "messenger";
+				} else if (level.status == "win" && n < plans.length - 1) {
+						display.clear();
+						startLevel(n + 1);
+				} else if (level.status == "win") {
+					display.clear();
+					// insert game winning sequence here
+					console.log ("You win!");
 				}
+
+				if (level.status == "loss" && trashTalk.length == initialTrashLength) {
+					var randomIndex = Math.floor(Math.random() * trashTalk.length);
+					var epicSlam = trashTalk.splice(randomIndex, 1)[0];
+					console.log(epicSlam);
+					controller.messageText.innerText = "You've destroyed us, Sir!\n\n" + 
+						epicSlam;
+					controller.messageBoard.className = "messenger";
+				} else if (level.status == "loss") {
+					// add player lives to the game and test for remaining life here
+					display.clear();
+					startLevel(n);
+				}
+				// if(level.status == "pauseWin" || level.status == "pauseLoss") {
+				// 	messageBoy(level, controller);
+				// } else if (level.status == "lost") {
+				// 	startLevel(n);
+				// } else if (level.status == "won" && n < plans.length - 1) {
+				// 	startLevel(n + 1); 
+				// } else if (level.status == "won") {
+				// 	// game winning sequence;
+				// 	console.log("You win!");
+				// }
 			}
 			level.finalSequence();
 		});
@@ -893,17 +933,18 @@ function runLevel(level, Display, andThen) {
 		if (level.status == "paused") {
 			return false;
 		}
+		// Initiate final sequence of the level
+		if (level.isFinished()) {
+			// display.clear();
+			controller.launchControls.className = "controls-hidden";
+			if (andThen)
+				andThen(level, controller, display);
+			return false;
+		}
 		// Draw the next frame
 		level.animate(step, controller);
 		display.drawFrame(step);
-		// Initiate final sequence of the level
-		if (level.isFinished()) {
-			display.clear();
-			controller.launchControls.className = "controls-hidden";
-			if (andThen)
-				andThen(level, controller);
-			return false;
-		}
+
 	}
 	runAnimation(frameFunc);
 }
@@ -924,6 +965,15 @@ function runAnimation(frameFunc) {
 	requestAnimationFrame(frame);
 }
 
+var congrats = [
+	"You\'ve done it, Commander!",
+	"Write down your answer to the following riddle and save it for later."
+]
+
+levelData.messages.forEach(function (element) {
+	congrats.push(element);
+});
+
 var trashTalk = [
 	"Perhaps your calculations were a tad off, Commander.",
 	"Might I suggest using the targeting computer next time?",
@@ -932,6 +982,8 @@ var trashTalk = [
 	"The Galaxy's secrets have escaped us once again!",
 	"Noooooooooooooooooooooo!"
 ]
+
+var initialTrashLength = trashTalk.length;
 
 /**************/
 /* Some Tests */

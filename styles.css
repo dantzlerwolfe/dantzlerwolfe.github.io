@@ -46,6 +46,10 @@ fieldset legend {
 .HardWall { background: #A52A2A; }
 .SoftWall { background: yellow; }
 
+.hidden { 
+  opacity: 0;
+}
+
 .hit-final {
   background-image: url("assets/explosion3.gif");
   background-position: center;
@@ -108,7 +112,7 @@ fieldset legend {
   background-color: black;
   padding: 10px 20px;
   font-family: monospace;
-  font-size: 3em;
+  font-size: 2.25em;
 
 }
 
