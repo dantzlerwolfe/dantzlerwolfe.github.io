@@ -173,6 +173,9 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 		}, 3200);	
 		// level.status = "pauseLoss";
 		level.status = "loss";
+		controlObj.messageText.innerText = "You've destroyed us, Sir!";
+		controlObj.messageBoard.className = "messenger";
+		level.finishDelay = 1;
 		this.hit = false;
 	}
 };
@@ -215,7 +218,7 @@ Projectile.prototype.ghostChange = function(obj) {
 		}, 200);
 };
 
-Projectile.prototype.act = function(deltaT, level) {
+Projectile.prototype.act = function(deltaT, level, controlObj) {
 	var newStats = this.move(deltaT);
 	var newYVelocity = newStats["newYVelocity"];
 	var testPos = newStats["newPos"];
@@ -224,9 +227,19 @@ Projectile.prototype.act = function(deltaT, level) {
 	var initialPower = this.power;
 
 	// Destroy projectiles that are out of power
-	if (this.power <=0 ) {
-		Remove(level.activeGrid, this);
+	// Game lost if last projectile disappears before target is dead
+	if (this.power <= 0) {
+		remove(level.activeGrid, this);
 		level.effects.poofEffect.play();
+		if (!findType(level.activeGrid, "projectile") && 
+			findType(level.activeGrid, "target") && 
+			level.activeGrid[0].ammo == 0) {
+			controlObj.messageText.textContent = "We\'re out of ammo!" + 
+				"  There\'s no hope for us now!"
+			controlObj.messageBoard.className = "messenger";
+			level.finishDelay = 2;
+			level.status = "loss";
+		}
 	}
 
 	// Wrap around behavior
@@ -573,32 +586,33 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 	}
 };
 
-// 	if (level.status == "paused" &&
-// 			level.activeGrid[1].power <= 0) {
-// 		level.status = "pauseWin";
-// 		messageBoard.className = "messenger-hidden";
-// 		runAnimation(frameFunc);
-// 	} else if (level.status == "paused") {
-// 		if(messageBoard) messageBoard.className = "messenger-hidden";
-// 		level.status = null;
-// 		levelData.soundTrack.play();
-// 		runAnimation(frameFunc);
-// 	} else if (level.status == null) {
-// 			level.status = "paused";
-// 			levelData.soundTrack.pause();
-// 	} else if (level.status == "pauseWin") {
-// 			if (levelData.messages.length) level.status = "pauseWin";
-// 				else level.status = "won";
-// 			messageBoard.className = "messenger-hidden";
-// 			level.finalSequence();
-// 	} else if (level.status == "pauseLoss") {
-// 			level.status = "lost";
-// 			messageBoard.className = "messenger-hidden";
-// 			level.finalSequence();
-// 	}
-// };
-
 Level.prototype.timeouts = {};
+
+Level.prototype.congrats = function () {
+	var congrats = [
+	"You\'ve done it, Commander!",
+	"Write down your answer to the following riddle and save it for later."
+]
+
+levelData.messages.forEach(function (element) {
+	congrats.push(element);
+});
+
+return congrats;
+}();
+
+Level.prototype.trashTalk = [
+	"Perhaps your calculations were a tad off, Commander.",
+	"Might I suggest using the targeting computer next time?",
+	"I shall be happy to serve as a character witness\n\
+	at your court martial, Commander.",
+	"The Galaxy's secrets have escaped us once again!",
+	"Noooooooooooooooooooooo!"
+]
+
+Level.prototype.trashLength = Level.prototype.trashTalk.length;
+
+Level.prototype.slamCount = 0;
 
 Level.prototype.isFinished = function() {
 	// console.log(this.status);
@@ -663,7 +677,6 @@ DOMDisplay.prototype.drawFrame = function() {
 
 DOMDisplay.prototype.clear = function() {
   this.wrap.parentNode.removeChild(this.wrap);
-  window.location.reload(false);
 };
 
 /*************/
@@ -677,8 +690,19 @@ function assignSound (url, vol) {
 		return track;
 	}
 
-// Remove an array element
-function Remove (array, element) {
+// Find an array element
+function findType (array, type) {
+	var i;
+	for (i = 0; i < array.length; i++) {
+		if(array[i].type == type) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Remove array element
+function remove (array, element) {
 	array.splice(array.indexOf(element), 1);
 }
 
@@ -696,6 +720,12 @@ Vector.prototype.scale = function(scalar) {
 	return new Vector(this.x * scalar, this.y * scalar);
 };
 
+// Clone a node
+function cloner(ID) {
+	var el = document.getElementById(ID),
+    elClone = el.cloneNode(true);
+	el.parentNode.replaceChild(elClone, el);
+}
 
 
 /****************/
@@ -747,10 +777,12 @@ function launchControl (level, frameFunc) {
 	var launchControls = document.getElementById("control-div");
 	var launchDiv = document.getElementsByClassName("launcher");
 	var launchPower = document.getElementById("launch-power");
+	var launcherHealth = document.getElementById("launcher-health")
 	var messageBoard = document.getElementById("message-board");
 	var messages = levelData.messages;
 	var pauseButton = document.getElementById("pause-button");
 	var targetDiv = document.getElementsByClassName("target");
+	var targetHealth = document.getElementById("target-health");
 	
 	launchControls.className = "controls";
 	console.log(ammoCount);
@@ -846,6 +878,10 @@ function launchControl (level, frameFunc) {
 	controlObj.messages = messages;
 	controlObj.targetPicDiv = targetPicDiv;
 	controlObj.launchPicDiv = launchPicDiv;
+	controlObj.launchAngle = launchAngle;
+	controlObj.launchPower = launchPower;
+	controlObj.launcherHealth = launcherHealth;
+	controlObj.targetHealth = targetHealth;
 
 	return controlObj;
 }
@@ -873,29 +909,43 @@ function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(level, controller, display) {
 			level.finalSequence = function() {
-				if (level.status == "win" && congrats.length) {
-					var lastMessage = congrats.shift();
+				function resetController(controller) {
+					controller.ammoCount.innerText = "5";
+					controller.launchPower.value = "";
+					controller.launchAngle.value = "";
+					controller.launcherHealth.innerText = "3";
+					controller.targetHealth.innerText = "2";
+					cloner("control-div");
+				}
+				if (level.status == "win" && level.congrats.length) {
+					var lastMessage = level.congrats.shift();
 					controller.messageText.innerText = lastMessage;
 					controller.messageBoard.className = "messenger";
 				} else if (level.status == "win" && n < plans.length - 1) {
+						// clear the grid and get rid of the event listeners
 						display.clear();
+						resetController(controller);
 						startLevel(n + 1);
 				} else if (level.status == "win") {
 					display.clear();
+					resetController(controller); 
 					// insert game winning sequence here
+					controller.messageText.innerText = "You win!";
 					console.log ("You win!");
 				}
 
-				if (level.status == "loss" && trashTalk.length == initialTrashLength) {
-					var randomIndex = Math.floor(Math.random() * trashTalk.length);
-					var epicSlam = trashTalk.splice(randomIndex, 1)[0];
+				if (level.status == "loss" && level.slamCount == 0) {
+					var randomIndex = Math.floor(Math.random() * level.trashTalk.length);
+					var epicSlam = level.trashTalk[randomIndex];
 					console.log(epicSlam);
-					controller.messageText.innerText = "You've destroyed us, Sir!\n\n" + 
-						epicSlam;
+					controller.messageText.innerText = epicSlam;
 					controller.messageBoard.className = "messenger";
+					level.slamCount += 1;
 				} else if (level.status == "loss") {
 					// add player lives to the game and test for remaining life here
+					level.slamCount = 0;
 					display.clear();
+					resetController(controller);
 					startLevel(n);
 				}
 				// if(level.status == "pauseWin" || level.status == "pauseLoss") {
@@ -965,25 +1015,8 @@ function runAnimation(frameFunc) {
 	requestAnimationFrame(frame);
 }
 
-var congrats = [
-	"You\'ve done it, Commander!",
-	"Write down your answer to the following riddle and save it for later."
-]
 
-levelData.messages.forEach(function (element) {
-	congrats.push(element);
-});
 
-var trashTalk = [
-	"Perhaps your calculations were a tad off, Commander.",
-	"Might I suggest using the targeting computer next time?",
-	"I shall be happy to serve as a character witness\n\
-	at your court martial, Commander.",
-	"The Galaxy's secrets have escaped us once again!",
-	"Noooooooooooooooooooooo!"
-]
-
-var initialTrashLength = trashTalk.length;
 
 /**************/
 /* Some Tests */
