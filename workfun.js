@@ -37,6 +37,40 @@ var levelPlans = [
 		],
 		soundTrack: assignSound('assets/forest-night.wav', 1),
 	}
+],
+[
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"                  xxx                      ",
+	"                    xx                     ",
+	"        x            x                     ",
+	"        x            x                     ",
+	"  x     x                     L         x  ",
+	"  x     x                     xxx       x  ",
+	"  x     x    xx                         x  ",
+	"  x     xxT                             x  ",
+	"  x     xxx                             x  ",
+	"  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  ",
+	"                                           ",
+	{
+		name: "Mars", 
+		G: 3.75,
+		messages: [
+			"This thing all things devours:\n\
+			Birds, beasts, trees, flowers;\n\
+			Gnaws iron, bites steel;\n\
+			Grinds hard stones to meal;\n\
+			Slays king, ruins town,\n\
+			And beats high mountain down.",
+		],
+		soundTrack: assignSound('assets/forest-night.wav', 1),
+	}
 ]
 ];
 
@@ -126,7 +160,7 @@ Launcher.prototype.fire = function(level, controlObj) {
 		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
 		var newRound = new Projectile(origin);
 		// var newRound = new Projectile(this.pos.plus(new Vector(.4, .2)));
-		console.log(this);
+		// console.log(this);
 		var velocity = impulse(this.launchAngle, this.initialForce, 
 				this.timeApplied, newRound.mass);
 		// velocity.x = Number(velocity.x.toFixed(4));
@@ -334,6 +368,7 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		level.status = "win"
 		level.activeGrid.splice(1, 1);
 		console.log(level.activeGrid);
+		console.log(level.congrats);
 		// Set finishDelay to a positive number if needed.
 		level.finishDelay = 3;
 		this.hit = false;
@@ -394,15 +429,35 @@ function Level (plan) {
 	}
 	this.finishDelay = null;
 	this.status = "new";
-
-}
-
-// Define sound library for Level.
-Level.prototype.effects = {
-	damageEffect: assignSound('assets/small-explosion.wav', 1),
-	destroyEffect: assignSound('assets/big-explosion.wav', 1),
-	launchEffect: assignSound('assets/simple-launch.wav', 1),
-	poofEffect: assignSound('assets/poof.wav', 1)
+	this.timeouts = {};
+	// Define sound library for Level.
+	this.effects = {
+		damageEffect: assignSound('assets/small-explosion.wav', 1),
+		destroyEffect: assignSound('assets/big-explosion.wav', 1),
+		launchEffect: assignSound('assets/simple-launch.wav', 1),
+		poofEffect: assignSound('assets/poof.wav', 1)
+	};
+	// Initialize messages for Level.
+	this.congrats = function () {
+		var congrats = [
+			"You\'ve done it, Commander!",
+			"Write down your answer to the following riddle and save it for later."
+		];
+		levelData.messages.forEach(function (element) {
+			congrats.push(element);
+		});
+		return congrats;
+	}();
+	this.trashTalk = [
+		"Perhaps your calculations were a tad off, Commander.",
+		"Might I suggest using the targeting computer next time?",
+		"I shall be happy to serve as a character witness\n\
+		at your court martial, Commander.",
+		"The Galaxy's secrets have escaped us once again!",
+		"Noooooooooooooooooooooo!"
+	];
+	this.trashLength = this.trashTalk.length;
+	this.slamCount = 0;
 }
 
 // Identify static obstacles that cause an interaction prior to impact.
@@ -585,34 +640,6 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 			level.finalSequence();
 	}
 };
-
-Level.prototype.timeouts = {};
-
-Level.prototype.congrats = function () {
-	var congrats = [
-	"You\'ve done it, Commander!",
-	"Write down your answer to the following riddle and save it for later."
-]
-
-levelData.messages.forEach(function (element) {
-	congrats.push(element);
-});
-
-return congrats;
-}();
-
-Level.prototype.trashTalk = [
-	"Perhaps your calculations were a tad off, Commander.",
-	"Might I suggest using the targeting computer next time?",
-	"I shall be happy to serve as a character witness\n\
-	at your court martial, Commander.",
-	"The Galaxy's secrets have escaped us once again!",
-	"Noooooooooooooooooooooo!"
-]
-
-Level.prototype.trashLength = Level.prototype.trashTalk.length;
-
-Level.prototype.slamCount = 0;
 
 Level.prototype.isFinished = function() {
 	// console.log(this.status);
@@ -909,6 +936,7 @@ function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(level, controller, display) {
 			level.finalSequence = function() {
+				console.log(level);
 				function resetController(controller) {
 					controller.ammoCount.innerText = "5";
 					controller.launchPower.value = "";
@@ -968,6 +996,7 @@ function runGame(plans, Display) {
 }
 
 function runLevel(level, Display, andThen) {
+	console.log(level)
 	// Store game div
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
