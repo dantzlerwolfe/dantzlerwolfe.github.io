@@ -199,7 +199,6 @@ function Launcher(pos) {
 Launcher.prototype.fire = function(level, controlObj) {
 	if (level.status == "paused") return null;
 	if (this.ammo > 0) {
-		console.log(controlObj);
 		var origin = this.pos.plus(new Vector(this.size.x / 2.5, this.size.y / 5));
 		var newRound = new Projectile(origin);
 		// var newRound = new Projectile(this.pos.plus(new Vector(.4, .2)));
@@ -364,14 +363,12 @@ Projectile.prototype.act = function(deltaT, level, controlObj) {
 
 Projectile.prototype.interact = {
 	x: function(obj1) {
-		  console.log("xBlock")
 			if(!obj1.ghost) {
 				obj1.velocity.x *= -1;
 				obj1.power -= 1;
 			}
 		},
 	y: function(obj1) {
-			console.log("yBlock")
 			if(!obj1.ghost) { 
 				obj1.velocity.y *= -1;
 				obj1.power -= 1;
@@ -414,8 +411,6 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		}, 3200);	
 		level.status = "win"
 		level.activeGrid.splice(1, 1);
-		console.log(level.activeGrid);
-		console.log(level.congrats);
 		// Set finishDelay to a positive number if needed.
 		level.finishDelay = 3;
 		this.hit = false;
@@ -424,15 +419,12 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 
 Target.prototype.interact = {
 	x: function (obj1, obj2) {
-		console.log("x");
-		console.log(obj2);
 		obj1.velocity.x *= -0.5;
 		obj2.power -= 1;
 		obj1.power -= 1;
 		obj2.hit = true;
 	},
 	y: function (obj1, obj2) {
-		console.log("y " + obj2);
 		obj1.velocity.y *= -0.5;
 		obj2.power -= 1;
 		obj1.power -= 1;
@@ -823,7 +815,6 @@ function cloner(ID) {
 // in seconds, projMass in kg
 // make sure that the sign is correct on Y-axis
 function impulse(launchAngle, launchForce, timeApplied, projMass) {
-	console.log(launchForce);
 	var xVelocity = launchForce * Math.cos(launchAngle) * 							
 										timeApplied / projMass;         									
 	var yVelocity = (-1 * launchForce * Math.sin(launchAngle) + G) *  		
@@ -871,8 +862,6 @@ function launchControl (level, frameFunc) {
 	var targetHealth = document.getElementById("target-health");
 	
 	launchControls.className = "controls";
-	console.log(ammoCount);
-	console.log(messageBoard);
 
 	// Insert Launcher graphics
 	var launchStyles = {
@@ -894,8 +883,6 @@ function launchControl (level, frameFunc) {
 	var launchPic = launchPicDiv.appendChild(elMaker("object", "launch-pic"));
 	launchPic.type = "image/svg+xml";
 	launchPic.data = "assets/launcher.svg";
-	console.log(launchPicDiv)
-	console.log(launchPic.style);
 
 	// Insert Target graphics
 	var targetStyles = {
@@ -909,8 +896,6 @@ function launchControl (level, frameFunc) {
 		activeDiv[0].parentNode.appendChild(elMaker("div", "target-pic-div"));
 	targetPicDiv.style.top = String(parseInt(targetStyles.top) -
 		100 + parseInt(targetStyles.height)) + "px";
-	console.log("top - " + parseInt(targetStyles.top) + 
-		"\nheight - " + parseInt(targetStyles.height));
 	targetPicDiv.style.left = String(parseInt(targetStyles.left) +
 		parseInt(targetStyles.width) / 2 - 50) + "px";
 
@@ -927,7 +912,6 @@ function launchControl (level, frameFunc) {
 		launcher.initialForce = launcher.forceMultiple * 9.81;
 	}, false);
 	fireButton.addEventListener("click", function() {
-		console.log(launcher);
 		launcher.fire(level, controlObj);
 		}, false);
 	pauseButton.addEventListener("click", function () {
@@ -1026,8 +1010,8 @@ function winScreen(controller, level) {
 			var randomIndex = Math.floor(Math.random() * level.wisdom.length);
 			var epicWisdom = level.wisdom[randomIndex];
 			controller.messageBoard.innerHTML = "<p>The Ancients have spoken:</p><br />" + 
-				"<span class = \"callout\">" + epicWisdom + "</span><br />" +
-				"<p>Play again for even more wisdom.</p>";
+				"<span class = \"callout\">" + epicWisdom + "</span><br />" + 
+				"<br /><p>Play again for even more wisdom.</p>";
 			controller.messageBoard.className = "messenger";
 		} else { tryAgain.className = "row" }
 	});
@@ -1038,7 +1022,6 @@ function runGame(plans, Display) {
 	function startLevel(n) {
 		runLevel(new Level(plans[n]), Display, function(level, controller, display) {
 			level.finalSequence = function() {
-				console.log(level);
 				function resetController(controller) {
 					controller.ammoCount.innerText = "5";
 					controller.launchPower.value = "";
@@ -1069,7 +1052,6 @@ function runGame(plans, Display) {
 				if (level.status == "loss" && level.slamCount == 0) {
 					var randomIndex = Math.floor(Math.random() * level.trashTalk.length);
 					var epicSlam = level.trashTalk[randomIndex];
-					console.log(epicSlam);
 					controller.messageText.innerText = epicSlam;
 					controller.messageBoard.className = "messenger";
 					level.slamCount += 1;
@@ -1100,7 +1082,6 @@ function runGame(plans, Display) {
 }
 
 function runLevel(level, Display, andThen) {
-	console.log(level)
 	// Store game div
 	var targetNode = document.getElementById("game-div");
 	// Initialize display
