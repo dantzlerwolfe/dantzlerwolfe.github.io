@@ -60,16 +60,50 @@ var levelPlans = [
 	"                                           ",
 	{
 		name: "Mars", 
-		G: 3.75,
+		G: 3.71,
 		messages: [
-			"This thing all things devours:\n\
-			Birds, beasts, trees, flowers;\n\
-			Gnaws iron, bites steel;\n\
-			Grinds hard stones to meal;\n\
-			Slays king, ruins town,\n\
-			And beats high mountain down.",
+			"What is greater than God,\n\
+			more evil than the devil,\n\
+			the poor have it,\n\
+			the rich need it,\n\
+			and if you eat it, you'll die?",
 		],
-		soundTrack: assignSound('assets/forest-night.wav', 1),
+		soundTrack: assignSound('assets/alien-alarm.wav', 1),
+	}
+],
+[
+	"                                           ",
+	"                                           ",
+	"                                           ",
+	"         xx                                ",
+	"         x                                 ",
+	"         x                                 ",
+	"         x                                 ",
+	"         x                       xx        ",
+	"                     L                     ",
+	"                    xx                     ",
+	"                    x                      ",
+	"                    x                      ",
+	"  x                      x                 ",
+	"  x                      x                 ",
+	"  x                x T   x              x  ",
+	"  x                xxx   x              x  ",
+	"  x                x     x              x  ",
+	"  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  ",
+	"                                           ",
+	{
+		name: "Jupiter", 
+		G: 24.8,
+		messages: [
+			"Three Callistoan students were brought before the ancient\
+			king. One of them had slaughtered the king's great sandworm.\
+			The first said \"I'm innocent.\" The second said, \"I'm\
+			innocent.\" The third said, \"The second student slaughtered your\
+			sandworm, Your Majesty.\" If only one of the students was telling\
+			the truth, which student slaughtered the sandworm of the ancient king?"
+			,
+		],
+		soundTrack: assignSound('assets/scifi-menace.wav', 1),
 	}
 ]
 ];
@@ -86,6 +120,15 @@ var progress = 1,
 		currentLevel = levelPlans[progress - 1],
 		levelData = window["currentLevel"].pop(),
 		G = levelData["G"];
+
+// Clear levelPlan variables in the local scope. 
+// Could definitely use some refactoring . . .
+function advanceLevel() {
+	progress++;
+	currentLevel = levelPlans[progress - 1],
+	levelData = window["currentLevel"].pop(),
+	G = levelData["G"];
+}
 
 /***************/
 /* Plan Legend */
@@ -174,7 +217,7 @@ Launcher.prototype.fire = function(level, controlObj) {
 			controlObj.messageText.textContent = "We're out of ammo, sir."
 			controlObj.messageBoard.className = "messenger";
 			level.timeouts.impact1 = window.setTimeout(function() {
-			controlObj.messageBoard.className = "messenger-hidden";
+			controlObj.messageBoard.className = "hidden";
 		}, 1000);
 			// This is where we'd ask user to buy ammo ;)
 	}
@@ -184,6 +227,7 @@ Launcher.prototype.type = "launcher";
 Launcher.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power > 0 && this.hit) {
 		level.effects.damageEffect.play();
+		controlObj.launcherHealth.textContent = this.power;
 		controlObj.messageText.textContent = "You've hit us, Sir!"
 		controlObj.messageBoard.className = "messenger";
 		controlObj.launchPicDiv.className = "launch-pic-div hit-normal";
@@ -192,12 +236,13 @@ Launcher.prototype.act = function(deltaT, level, controlObj) {
 		}, 1000);	
 		this.hit = false; 
 		level.timeouts.impact1 = window.setTimeout(function() {
-			controlObj.messageBoard.className = "messenger-hidden";
+			controlObj.messageBoard.className = "hidden";
 		}, 1000);	
 	}
 
 	if(this.power <= 0 && this.hit) {
 		level.effects.destroyEffect.play();
+		controlObj.launcherHealth.textContent = this.power;
 		// window.clearTimeout(level.timeouts.impact1);
 		controlObj.launchPicDiv.className = "launch-pic-div hit-final";
 		controlObj.launchPicDiv.innerHTML = "";
@@ -346,6 +391,7 @@ Target.prototype.type = "target";
 Target.prototype.act = function(deltaT, level, controlObj) {
 	if(this.power > 0 && this.hit) {
 		level.effects.damageEffect.play();
+		controlObj.targetHealth.textContent = this.power;
 		controlObj.targetPicDiv.className = "target-pic-div hit-normal";
 		level.timeouts.explosion = window.setTimeout(function() {
 			controlObj.targetPicDiv.className = "target-pic-div";
@@ -354,12 +400,13 @@ Target.prototype.act = function(deltaT, level, controlObj) {
 		controlObj.messageBoard.className = "messenger";
 		this.hit = false; 
 		level.timeouts.impact1 = window.setTimeout(function() {
-			controlObj.messageBoard.className = "messenger-hidden";
+			controlObj.messageBoard.className = "hidden";
 		}, 1000);	
 	}
 
 	if(this.power <= 0 && this.hit) {
 		level.effects.destroyEffect.play();
+		controlObj.targetHealth.textContent = this.power;
 		window.clearTimeout(level.timeouts.impact1);
 		controlObj.targetPicDiv.className = "target-pic-div hit-final";
 		level.timeouts.explosion = window.setTimeout(function() {
@@ -456,8 +503,18 @@ function Level (plan) {
 		"The Galaxy's secrets have escaped us once again!",
 		"Noooooooooooooooooooooo!"
 	];
-	this.trashLength = this.trashTalk.length;
+	this.wisdom = [
+		"The equivalence of energy and matter is just the beginning . . .",
+		"Han shot first.",
+		"Deckard may or may not be a replicant. But ambiguity is definitely a\
+		growth hack.",
+		"Don't treat people like\
+		<a href=\"http://www.ebaumsworld.com/video/watch/84152924/\">\
+		THIS</a>",
+		"We didn't understand Primer the first time we saw it either."
+	]
 	this.slamCount = 0;
+	this.finalTheme = assignSound('assets/bassline-groove.wav', 1);
 }
 
 // Identify static obstacles that cause an interaction prior to impact.
@@ -630,7 +687,7 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 		level.status = "paused";
 		levelData.soundTrack.pause();
 	} else if (level.status == "paused") {
-			if(messageBoard) messageBoard.className = "messenger-hidden";
+			if(messageBoard) messageBoard.className = "hidden";
 			level.status = null;
 			levelData.soundTrack.play();
 			runAnimation(frameFunc);
@@ -638,6 +695,8 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 			level.finalSequence();
 	} else if (level.status == "loss") {
 			level.finalSequence();
+	} else if (level.status == "conquered") {
+		window.location.reload(false); 
 	}
 };
 
@@ -931,6 +990,48 @@ function launchControl (level, frameFunc) {
 // 	}
 // }
 
+// Final form submission
+function winScreen(controller, level) {
+	controller.messageBoard.className = "hidden";
+	var answerForm = document.getElementById("answers");
+	var riddle1 = document.getElementById("riddle1");
+	var riddle2 = document.getElementById("riddle2");
+	var riddle3 = document.getElementById("riddle3");
+	var riddleSub = document.getElementById("riddle-submit");
+	var tryAgain = document.getElementById("try-again");
+	answerForm.className = "form-horizontal container";
+	riddle1.addEventListener("input", function() {
+		if(!/\btime\b/i.test(riddle1.value)) {
+			riddle1.className = "form-control wrong-answer"; 
+		} else { riddle1.className = "form-control" }		
+	});
+	riddle2.addEventListener("input", function() {
+		if(!/\bnothing\b/i.test(riddle2.value)) {
+			riddle2.className = "form-control wrong-answer"; 
+		} else { riddle2.className = "form-control" }
+	});
+	riddle3.addEventListener("input", function() {
+		if(!/\b(second|2nd|2d|2)\b/i.test(riddle3.value)) {
+			riddle3.className = "form-control wrong-answer"; 
+		} else { riddle3.className = "form-control" }
+	});
+	riddleSub.addEventListener("click", function() {
+		if(/\btime\b/i.test(riddle1.value) && 
+			/\bnothing\b/i.test(riddle2.value) &&
+			/\b(second|2nd|2d|2)\b/i.test(riddle3.value)) {
+			answerForm.className = "hidden";
+			level.status = "conquered";
+			level.finalTheme.play();
+			level.finalTheme.loop = true;
+			var randomIndex = Math.floor(Math.random() * level.wisdom.length);
+			var epicWisdom = level.wisdom[randomIndex];
+			controller.messageBoard.innerHTML = "<p>The Ancients have spoken:</p><br />" + 
+				"<span class = \"callout\">" + epicWisdom + "</span>";
+			controller.messageBoard.className = "messenger";
+		} else { tryAgain.className = "row" }
+	});
+}
+
 // Run the game
 function runGame(plans, Display) {
 	function startLevel(n) {
@@ -953,13 +1054,15 @@ function runGame(plans, Display) {
 						// clear the grid and get rid of the event listeners
 						display.clear();
 						resetController(controller);
+						advanceLevel();
 						startLevel(n + 1);
 				} else if (level.status == "win") {
 					display.clear();
 					resetController(controller); 
 					// insert game winning sequence here
-					controller.messageText.innerText = "You win!";
-					console.log ("You win!");
+					winScreen(controller, level);
+					// controller.messageText.innerText = "You win!";
+					// console.log ("You win!");
 				}
 
 				if (level.status == "loss" && level.slamCount == 0) {
@@ -1015,6 +1118,7 @@ function runLevel(level, Display, andThen) {
 		// Initiate final sequence of the level
 		if (level.isFinished()) {
 			// display.clear();
+			soundTrack.pause();
 			controller.launchControls.className = "controls-hidden";
 			if (andThen)
 				andThen(level, controller, display);

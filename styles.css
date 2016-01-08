@@ -14,6 +14,8 @@ body {
 
 .background td { padding: 0;                     }
 
+.callout { color: #f00; }
+
 .controls {
   opacity: 100;
   font-size: 1.5em;
@@ -45,6 +47,8 @@ fieldset legend {
 }
 .HardWall { background: #A52A2A; }
 .SoftWall { background: yellow; }
+
+.hidden { display: none; }
 
 .hit-final {
   background-image: url("assets/explosion3.gif");
@@ -92,6 +96,8 @@ fieldset legend {
   z-index: 99;
 }
 
+#try-again { color: #f00; }
+
 .messenger {
 	position: absolute;
   background-color: black;
@@ -101,6 +107,7 @@ fieldset legend {
 	padding: 10px 20px;
   font-family: monospace;
   font-size: 2.25em;
+  z-index: 1500;
 }
 
 .messenger-final {
@@ -119,4 +126,13 @@ fieldset legend {
 	max-width: 200px;
 	padding: 10px 20px;
 	opacity: 0;
+}
+
+.riddle-answer {
+  margin-top: 20px;
+}
+
+.wrong-answer {
+  border-color: red;
+  background-color: rgba(255, 0, 0, 0.5);
 }
