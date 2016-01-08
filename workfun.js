@@ -687,8 +687,6 @@ Level.prototype.pauseToggler = function (level, frameFunc, messageBoard) {
 			level.finalSequence();
 	} else if (level.status == "loss") {
 			level.finalSequence();
-	} else if (level.status == "conquered") {
-		window.location.reload(false); 
 	}
 };
 
@@ -1004,14 +1002,14 @@ function winScreen(controller, level) {
 			/\bnothing\b/i.test(riddle2.value) &&
 			/\b(second|2nd|2d|2)\b/i.test(riddle3.value)) {
 			answerForm.className = "hidden";
-			level.status = "conquered";
 			level.finalTheme.play();
 			level.finalTheme.loop = true;
 			var randomIndex = Math.floor(Math.random() * level.wisdom.length);
 			var epicWisdom = level.wisdom[randomIndex];
 			controller.messageBoard.innerHTML = "<p>The Ancients have spoken:</p><br />" + 
 				"<span class = \"callout\">" + epicWisdom + "</span><br />" + 
-				"<br /><p>Play again for even more wisdom.</p>";
+				"<br /><p><a href=\"http://dantzlerwolfe.github.io\">" + 
+				"Play again</a> for even more wisdom.</p>";
 			controller.messageBoard.className = "messenger";
 		} else { tryAgain.className = "row" }
 	});
