@@ -1026,7 +1026,8 @@ function winScreen(controller, level) {
 			var randomIndex = Math.floor(Math.random() * level.wisdom.length);
 			var epicWisdom = level.wisdom[randomIndex];
 			controller.messageBoard.innerHTML = "<p>The Ancients have spoken:</p><br />" + 
-				"<span class = \"callout\">" + epicWisdom + "</span>";
+				"<span class = \"callout\">" + epicWisdom + "</span><br />" +
+				"Play again for even more wisdom.";
 			controller.messageBoard.className = "messenger";
 		} else { tryAgain.className = "row" }
 	});
