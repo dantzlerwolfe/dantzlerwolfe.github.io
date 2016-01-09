@@ -108,14 +108,6 @@ var levelPlans = [
 ]
 ];
 
-/* // Gravitational Constants
-var gravities = {
-	Earth: 9.81,
-	Mars: 3.71,
-	Jupiter: 24.8
-};
-*/
-
 var progress = 1,
 		currentLevel = levelPlans[progress - 1],
 		levelData = window["currentLevel"].pop(),
@@ -313,7 +305,7 @@ Projectile.prototype.act = function(deltaT, level, controlObj) {
 			findType(level.activeGrid, "target") && 
 			level.activeGrid[0].ammo == 0) {
 			controlObj.messageText.textContent = "We\'re out of ammo!" + 
-				"  There\'s no hope for us now!"
+				"  There\'s no hope for us now!"	
 			controlObj.messageBoard.className = "messenger";
 			level.finishDelay = 2;
 			level.status = "loss";
@@ -332,32 +324,17 @@ Projectile.prototype.act = function(deltaT, level, controlObj) {
 	if(this.newPos.y > 0) {
 	var obstacle = level.sObstacleAt(this) || level.aObstacleAt(this);
 	}
-	// console.log(this.ghost);
-	// console.log("before " + this.power);
-	// console.log(this.size);
+
 	if (obstacle && !this.ghost) {
 		
 		level.interactWith(this, obstacle);
 		this.bounceEffect.play();
 		this.size = this.size.scale(Math.max(this.power / initialPower, 0));
 		this.bounceEffect.volume *= Math.max(this.power / initialPower, 0);
-		// console.log("after " + this.power);
-		// console.log(this.size);
-		// console.log(level.activeGrid.indexOf(this) + " O - " + 
-		// 	this.velocity.x + ", " + this.velocity.y);
-		// console.log(level.activeGrid.indexOf(this) + " O - " + 
-		// 	this.pos.x + ", " + this.pos.y);
 	}
 	else {
 		this.pos = this.newPos;
 		this.velocity.y = newYVelocity;
-		// console.log(level.activeGrid.indexOf(this) + " N - " + 
-		// 	this.velocity.x + ", " + this.velocity.y);
-		// console.log(level.activeGrid.indexOf(this) + " N - " + 
-		// 	this.pos.x + ", " + this.pos.y);
-		// var crushable = level.crushableAt(this);
-		// if (crushable) 
-		// 	level.interactWith(this, crushable);
 	}
 };
 
@@ -474,7 +451,8 @@ function Level (plan) {
 		damageEffect: assignSound('assets/small-explosion.wav', 1),
 		destroyEffect: assignSound('assets/big-explosion.wav', 1),
 		launchEffect: assignSound('assets/simple-launch.wav', 1),
-		poofEffect: assignSound('assets/poof.wav', 1)
+		poofEffect: assignSound('assets/poof.wav', 1),
+		tauntEffect: assignSound('assets/feeble-efforts.wav', 1)
 	};
 	// Initialize messages for Level.
 	this.congrats = function () {
@@ -954,24 +932,6 @@ function launchControl (level, frameFunc) {
 	return controlObj;
 }
 
-// Message Handlers
-// function messageBoy(level, controller) {
-// 	if (level.status == "pauseWin") {
-// 		var lastMessage = levelData.messages.pop();
-// 		controller.messageText.innerText = lastMessage;
-// 		controller.messageBoard.className = "messenger-final";
-// 	}
-
-// 	if (level.status == "pauseLoss") {
-// 		var randomIndex = Math.floor(Math.random() * trashTalk.length);
-// 		var epicSlam = trashTalk[randomIndex];
-// 		console.log(epicSlam);
-// 		trashTalk.splice(randomIndex, 1);
-// 		controller.messageText.innerText = epicSlam;
-// 		controller.messageBoard.className = "messenger-final";
-// 	}
-// }
-
 // Final form submission
 function winScreen(controller, level) {
 	controller.messageBoard.className = "hidden";
@@ -1055,21 +1015,12 @@ function runGame(plans, Display) {
 					level.slamCount += 1;
 				} else if (level.status == "loss") {
 					// add player lives to the game and test for remaining life here
+					// if (Math.round(Math.random())) level.effects.tauntEffect.play();
 					level.slamCount = 0;
 					display.clear();
 					resetController(controller);
 					startLevel(n);
 				}
-				// if(level.status == "pauseWin" || level.status == "pauseLoss") {
-				// 	messageBoy(level, controller);
-				// } else if (level.status == "lost") {
-				// 	startLevel(n);
-				// } else if (level.status == "won" && n < plans.length - 1) {
-				// 	startLevel(n + 1); 
-				// } else if (level.status == "won") {
-				// 	// game winning sequence;
-				// 	console.log("You win!");
-				// }
 			}
 			level.finalSequence();
 		});
@@ -1127,106 +1078,3 @@ function runAnimation(frameFunc) {
 	}
 	requestAnimationFrame(frame);
 }
-
-
-
-
-/**************/
-/* Some Tests */
-/**************/
-
-// Test Form Handler
-// document.addEventListener("DOMContentLoaded", afterDOM, false);
-
-// function afterDOM() {
-// 	var testForm = document.getElementById("test-form");
-// 	var testSubmit = document.getElementById("test-submit");
-// 	var testInput = document.getElementById("test-input");
-// 	window.inputAngle = document.getElementById("launch-angle");
-	
-// 	function publishInput() {
-// 		console.log(testInput.value);
-// 		event.preventDefault();
-// 	}
-
-// testForm.addEventListener('submit', publishInput, false);
-// }
-
-/*
-// Temporary animation tester
-var level = new Level(currentLevel);
-var display = null;
-var startTime = null;
-var maxStep = 0.05;
-var hotRound = null;
-var tracker = [];
-function testAnimation(timestamp) {
-	if (!startTime) startTime = timestamp;
-	// convert to seconds
-	var deltaT = Math.min(timestamp - startTime, 100) / 1000;
-	
-	level.animate(deltaT);
-	display.drawFrame();
-	if (hotRound) {
-		tracker.push(level.activeGrid[2].pos);
-	}
-	console.log("x - " + tracker[tracker.length - 1].x + 
-		", y - " + tracker[tracker.length - 1].y);
-	startTime = timestamp;
-	requestAnimationFrame(testAnimation);
-}
-var startTest = function(func) {
-	requestAnimationFrame(func);
-	level.activeGrid[0].fire();
-	hotRound = true;
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-	display = new DOMDisplay(document.body, level);
-});
-// End temporary animation tester
-*/
-
-// // OB Handler 1
-// var boundaryLength = level.staticGrid[0].length;
-// function OBH1(obj) {
-// 	if (obj.newPos.x > boundaryLength ||
-// 		obj.newPos.y < 0) {
-// 		console.log("You're out of bounds.");
-// 		return null;
-// 	}
-// }
-// // End OB Handler 1
-
-// // Step by step animation tester
-// var fRate = 1 / 60 // seconds per frame
-
-// function singleFrame() {
-// 	level.activeGrid[0].fire();
-// 	level.animate(fRate);
-// 	display.drawFrame();
-// 	tracker.push(level.activeGrid[2].pos);
-// 	console.log(tracker[tracker.length - 1].x);
-// 	console.log(tracker[tracker.length - 1].y);
-// }
-// // End step by step tester.
-
-
-/*
-// Test launcher.
-var launcher1 = new Launcher(10, 5, 5);
-console.log (launcher1);
-launcher1.fire();
-var trackerLog = [];
-var currentRound = launcher1.projectiles[launcher1.projectiles.length - 1];
-var countdown = 20;
-function trackerUpdate () {
-	currentRound.tracker();
-	trackerLog.push(currentRound.pos);
-	if (trackerLog.length > 20) {
-		clearInterval(trackerInterval);
-		console.log(trackerLog);
-	}
-}
-var trackerInterval = window.setInterval(trackerUpdate, 10);
-*/
