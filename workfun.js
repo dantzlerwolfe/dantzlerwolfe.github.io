@@ -1015,7 +1015,7 @@ function runGame(plans, Display) {
 					level.slamCount += 1;
 				} else if (level.status == "loss") {
 					// add player lives to the game and test for remaining life here
-					// if (Math.round(Math.random())) level.effects.tauntEffect.play();
+					if (Math.round(Math.random())) level.effects.tauntEffect.play();
 					level.slamCount = 0;
 					display.clear();
 					resetController(controller);
