@@ -953,7 +953,7 @@ function winScreen(controller, level) {
 		} else { riddle2.className = "form-control" }
 	});
 	riddle3.addEventListener("input", function() {
-		if(!/\b(second|2nd|2d|2)\b/i.test(riddle3.value)) {
+		if(!/\b(first|1st|1)\b/i.test(riddle3.value)) {
 			riddle3.className = "form-control wrong-answer"; 
 		} else { riddle3.className = "form-control" }
 	});
