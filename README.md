@@ -2,6 +2,9 @@ Hi! I'm John. Welcome to Domtastic.
 
 I started this project to help me understand chapter 15 of [Marijn Haverbeke's Eloquent Javascript](http://eloquentjavascript.net/index.html) by adapting his code to a simple projectile game I've called DOMTASTIC. The goal is to achieve, through customization, an understanding of the underlying techniques used in the chapter, including encapsulation, use of higher-order functions and basic asynchronous programming. 
 
+##Playing the Game##
+Go to [dantzlerwolfe.github.io](dantzlerwolfe.github.io). This game is a browser game and was not designed responsively. It will not work without javascript. So to get the best (and maybe only) experience, please use a laptop/desktop with a JS enabled browser.
+
 ##Unique/Heavily Modified Elements##
 While I often used Haverbeke's code as a conceptual (and sometimes actual) starting point, you will notice that most of Domtastic's components are completely unique or are heavily customized variants of Haverbeke's sample code. Here is a list of the most unique or heavily customized sections of the program:
 
@@ -13,7 +16,7 @@ While I often used Haverbeke's code as a conceptual (and sometimes actual) start
 Feedback and suggestions are very welcome. This was an exploratory project. I learned a lot, but there is still a long way to go before I can feel at ease with javascript.
 
 ##Styling##
-I used bootstrap's online customization form. [Here's the configuration gist.](https://gist.github.com/67d862f7aaa14bc02a89). [Click here for further customization](http://getbootstrap.com/customize/?id=67d862f7aaa14bc02a89). 
+I used bootstrap's online customization form. [Here's the configuration gist](https://gist.github.com/67d862f7aaa14bc02a89). [Click here for further customization](http://getbootstrap.com/customize/?id=67d862f7aaa14bc02a89). From my perspective, the most pressing visual design issues are the non-responsive design, choppy animations and some problems with the color scheme. From a game design perspective, I'd like to add a keystroke interface and improve the overall game mechanics.
 
 ##Sound Credits:##
 All of the sounds came from [freesound.org](http://freesound.org). I normalized volumes and made simple modifications using [twistedwave.com](https://twistedwave.com).
@@ -28,4 +31,7 @@ All of the sounds came from [freesound.org](http://freesound.org). I normalized 
 8. Projectile Bounce, martian, [Chorused Bounces](http://freesound.org/people/martian/sounds/19347/)
 9. Projectile Vanish, ljudman, [TV](http://freesound.org/people/ljudman/sounds/33243/)
 10. Alien Taunt, james ducket, [Feeble Efforts](http://freesound.org/people/james%20duckett/sounds/55082/)
+
+##To Do List##
+If you're interested in gaining any insight into my thought process, 
 
