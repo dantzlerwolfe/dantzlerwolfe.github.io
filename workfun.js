@@ -960,7 +960,7 @@ function winScreen(controller, level) {
 	riddleSub.addEventListener("click", function() {
 		if(/\btime\b/i.test(riddle1.value) && 
 			/\bnothing\b/i.test(riddle2.value) &&
-			/\b(second|2nd|2d|2)\b/i.test(riddle3.value)) {
+			/\b(first|1st|1)\b/i.test(riddle3.value)) {
 			answerForm.className = "hidden";
 			level.finalTheme.play();
 			level.finalTheme.loop = true;
