@@ -855,9 +855,9 @@ function launchControl (level, frameFunc) {
 	launchPicDiv.style.transform = "rotate(" + (-1) * initialAngle 
 		+ "deg)";
 
-	var launchPic = launchPicDiv.appendChild(elMaker("object", "launch-pic"));
+	var launchPic = launchPicDiv.appendChild(elMaker("img", "launch-pic"));
 	launchPic.type = "image/svg+xml";
-	launchPic.data = "assets/launcher.svg";
+	launchPic.src = "assets/launcher.svg";
 
 	// Insert Target graphics
 	var targetStyles = {
