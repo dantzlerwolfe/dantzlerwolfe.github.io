@@ -847,8 +847,7 @@ function launchControl (level, frameFunc) {
 		height: launchDiv[0].style.height,
 	};
 
-	var launchPicDiv = 
-		activeDiv[0].parentNode.appendChild(elMaker("div", "launch-pic-div"));
+	var launchPicDiv = activeDiv[0].parentNode.appendChild(elMaker("div", "launch-pic-div"));
 	launchPicDiv.style.top = String(parseInt(launchStyles.top) + 
 		parseInt(launchStyles.height) / 2 - 37.5) + "px";
 	launchPicDiv.style.left = String(parseInt(launchStyles.left) + 
